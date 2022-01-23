@@ -9,7 +9,7 @@ wa.SetFormat(EArchiveFormat.ZIP)
 wa.Open("data.zip")
 
 wa.AddEntry("testdata.txt")
-wa.AddEntry("테스트_데이터.txt")
+wa.AddEntry("테스트_데이터.txt")
 
 wa.Close()
 
