@@ -125,6 +125,8 @@ Enum EArchiveFormat
 	ZIP = $50000
 	EMPTY = $60000
 	AR = $70000
+	AR_GNU = $70000 | 1
+	AR_BSD = $70000 | 2
 	MTREE = $80000
 	RAW = $90000
 	XAR = $A0000
