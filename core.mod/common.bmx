@@ -137,13 +137,13 @@ Enum EArchiveFormat
 End Enum
 
 Enum EArchiveFileType:UInt
-	File = 100000 ' regular file
-	Link = 120000 ' symbolic link
-	Socket = 140000 ' socket
-	CharDevice = 20000 ' character device
-	BlockDevice = 60000 ' block device
-	Dir = 40000 ' directory
-	Fifo = 10000 ' named pipe
+	File = 32768 ' regular file - 0100000 (octal)
+	Link = 40960 ' symbolic link - 0120000
+	Socket = 49152 ' socket - 0140000
+	CharDevice = 8192 ' character device - 0020000
+	BlockDevice = 24576 ' block device - 0060000
+	Dir = 16384 ' directory - 0040000
+	Fifo = 4096 ' named pipe - 0010000
 End Enum
 
 Const ARCHIVE_FILTER_NONE:Int = 0

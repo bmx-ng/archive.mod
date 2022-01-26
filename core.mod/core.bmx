@@ -490,8 +490,12 @@ Type TWriteArchive Extends TArchive
 	bbdoc: Convience method for adding a file or #TStream to the archive.
 	about: If adding a #TStream, you will also need to provide @pathname, @size and @ftime values.
 	By default, files are added with the permission '0644' (decimal 420).
+	@pathname can also be used to define the path (include sub directories) of the file within the archive - this
+	is also dependent on support from the archive in question.
+
+	@fileType will 
 	End Rem
-	Method AddEntry(file:Object, pathname:String = Null, size:Long = 0, ftime:Long = 0)
+	Method AddEntry(file:Object, pathname:String = Null, size:Long = 0, ftime:Long = 0, fileType:EArchiveFileType = EArchiveFileType.File)
 		If String(file) Then
 			If Not pathname Then
 				pathname = StripDir(String(file))
@@ -506,42 +510,55 @@ Type TWriteArchive Extends TArchive
 			Throw New TArchiveException("Pathname is required. Unable to determine pathname from input")
 		End If
 
-		Local stream:TStream = ReadStream(file)
-
-		If Not stream Then
-			Throw New TArchiveException("Unabled to open stream for input file for path '" + pathname + "'")
+		If fileType <> EArchiveFileType.File And fileType <> EArchiveFileType.Dir Then
+			Throw New TArchiveException("fileType must be a File or a Dir.")
 		End If
 
-		If Not size Then
-			size = stream.Size()
+		Local stream:TStream
+		
+		If fileType = EArchiveFileType.File Then
+			stream = ReadStream(file)
+
+			If Not stream Then
+				Throw New TArchiveException("Unabled to open stream for input file for path '" + pathname + "'")
+			End If
+
+			If Not size Then
+				size = stream.Size()
+			End If
 		End If
 
 		Local entry:TArchiveEntry = New TArchiveEntry
 		entry.SetPathname(pathname)
-		entry.SetSize(size)
-		entry.SetFileType(EArchiveFileType.File)
-		entry.SetPermission(420) ' 0644
-		If ftime Then
-			entry.SetModifiedTime(ftime)
+		entry.SetFileType(fileType)
+
+		If fileType = EArchiveFileType.File Then
+			entry.SetPermission(420) ' 0644
+			entry.SetSize(size)
+			If ftime Then
+				entry.SetModifiedTime(ftime)
+			End If
 		End If
 
 		If Header(entry) <> ARCHIVE_OK Then
 			Throw New TArchiveException(String.FromUTF8String(archive_error_string(archivePtr)))
 		End If
 
-		Local StaticArray buf:Byte[8192]
-		Local count:Size_T = size
-		While count
-			Local nCount:Long = stream.Read(buf, Min(count, buf.Length))
-			If nCount <= 0 Then
-				Exit
-			End If
-			Data(buf, Size_T(nCount))
-			count :- nCount
-		Wend
+		If fileType = EArchiveFileType.File Then
+			Local StaticArray buf:Byte[8192]
+			Local count:Size_T = size
+			While count
+				Local nCount:Long = stream.Read(buf, Min(count, buf.Length))
+				If nCount <= 0 Then
+					Exit
+				End If
+				Data(buf, Size_T(nCount))
+				count :- nCount
+			Wend
 
-		If Not TStream(file) Then
-			stream.Close()
+			If Not TStream(file) Then
+				stream.Close()
+			End If
 		End If
 
 		FinishEntry()
