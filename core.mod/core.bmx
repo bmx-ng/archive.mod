@@ -624,49 +624,6 @@ Type TWriteArchive Extends TArchive
 
 End Type
 
-Type TReadDiskArchive Extends TArchive
-
-	Method New()
-		archivePtr = bmx_libarchive_archive_read_disk_new()
-	End Method
-	
-	Method EntryFromFile:Int(entry:TArchiveEntry)
-		Return bmx_libarchive_archive_read_disk_entry_from_file(archivePtr, entry.entryPtr)
-	End Method
-
-	Method SetSymlinkLogical:Int()
-		Return bmx_libarchive_archive_read_disk_set_symlink_logical(archivePtr)
-	End Method
-
-	Method SetSymlinkPhysical:Int()
-		Return bmx_libarchive_archive_read_disk_set_symlink_physical(archivePtr)
-	End Method
-
-	Method SetSymlinkhybrid:Int()
-		Return bmx_libarchive_archive_read_disk_set_symlink_hybrid(archivePtr)
-	End Method
-	
-	Method GName:String(gid:Long)
-		Return bmx_libarchive_archive_read_disk_gname(archivePtr, gid)
-	End Method
-	
-	Method UName:String(uid:Long)
-		Return bmx_libarchive_archive_read_disk_uname(archivePtr, uid)
-	End Method
-	
-	Method SetStandardLookup:Int()
-		Return bmx_libarchive_archive_read_disk_set_standard_lookup(archivePtr)
-	End Method
-	
-	Method Free()
-		If archivePtr Then
-			bmx_libarchive_archive_read_free(archivePtr)
-			archivePtr = Null
-		End If
-	End Method
-
-End Type
-
 Rem
 bbdoc: Represents entries within an archive.
 about: You can think of a #TArchiveEntry as a heavy-duty version of the c struct stat: it includes everything from struct stat plus

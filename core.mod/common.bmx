@@ -32,7 +32,6 @@ Extern
 
 	Function bmx_libarchive_archive_read_next_header:Int(handle:Byte Ptr, entry:Byte Ptr)
 	Function bmx_libarchive_archive_read_data_skip:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_read_extract:Int(handle:Byte Ptr, entry:Byte Ptr, flags:Int)
 	Function bmx_libarchive_archive_read_open:Int(handle:Byte Ptr, data:Object)
 	Function bmx_libarchive_archive_read_set_read_callback:Int(handle:Byte Ptr)
 	Function bmx_libarchive_archive_read_set_seek_callback:Int(handle:Byte Ptr)
@@ -94,15 +93,6 @@ Extern
 	Function bmx_libarchive_archive_entry_is_encrypted:Int(handle:Byte Ptr)
 	Function bmx_libarchive_archive_entry_size_is_set:Int(handle:Byte Ptr)
 	Function bmx_libarchive_archive_entry_size:Long(handle:Byte Ptr)
-
-	Function bmx_libarchive_archive_read_disk_new:Byte Ptr()
-	Function bmx_libarchive_archive_read_disk_entry_from_file:Int(handle:Byte Ptr, entry:Byte Ptr)
-	Function bmx_libarchive_archive_read_disk_set_standard_lookup:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_read_disk_set_symlink_logical:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_read_disk_set_symlink_physical:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_read_disk_set_symlink_hybrid:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_read_disk_gname:String(handle:Byte Ptr, gid:Long)
-	Function bmx_libarchive_archive_read_disk_uname:String(handle:Byte Ptr, uid:Long)
 
 	Function archive_error_string:Byte Ptr(handle:Byte Ptr)
 End Extern

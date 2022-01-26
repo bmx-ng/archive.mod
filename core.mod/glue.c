@@ -79,10 +79,6 @@ int bmx_libarchive_archive_read_data_skip(struct archive * arc) {
 	return archive_read_data_skip(arc);
 }
 
-int bmx_libarchive_archive_read_extract(struct archive * arc, struct archive_entry * entry, int flags) {
-	return archive_read_extract(arc, entry, flags);
-}
-
 int bmx_libarchive_archive_read_open(struct archive * arc, BBObject * data) {
 	return archive_read_open2(arc, data, bmx_libarchive_open_cb, bmx_libarchive_read_cb,
 		bmx_libarchive_seek_cb, bmx_libarchive_close_cb);
@@ -410,38 +406,4 @@ int bmx_libarchive_archive_entry_size_is_set(struct archive_entry * entry) {
 
 BBInt64 bmx_libarchive_archive_entry_size(struct archive_entry * entry) {
 	return archive_entry_size(entry);
-}
-
-/* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
-
-struct archive * bmx_libarchive_archive_read_disk_new() {
-	return archive_read_disk_new();
-}
-
-int bmx_libarchive_archive_read_disk_entry_from_file(struct archive * arc, struct archive_entry * entry) {
-	return archive_read_disk_entry_from_file(arc, entry, -1, NULL);
-}
-
-int bmx_libarchive_archive_read_disk_set_standard_lookup(struct archive * arc) {
-	return archive_read_disk_set_standard_lookup(arc);
-}
-
-int bmx_libarchive_archive_read_disk_set_symlink_logical(struct archive * arc) {
-	return archive_read_disk_set_symlink_logical(arc);
-}
-
-int bmx_libarchive_archive_read_disk_set_symlink_physical(struct archive * arc) {
-	return archive_read_disk_set_symlink_physical(arc);
-}
-
-int bmx_libarchive_archive_read_disk_set_symlink_hybrid(struct archive * arc) {
-	return archive_read_disk_set_symlink_hybrid(arc);
-}
-
-BBString * bmx_libarchive_archive_read_disk_gname(struct archive * arc, __LA_INT64_T gid) {
-	return bbStringFromUTF8String(archive_read_disk_gname(arc, gid));
-}
-
-BBString * bmx_libarchive_archive_read_disk_uname(struct archive * arc, __LA_INT64_T uid) {
-	return bbStringFromUTF8String(archive_read_disk_uname(arc, uid));
 }
