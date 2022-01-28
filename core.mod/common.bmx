@@ -119,6 +119,7 @@ Enum EArchiveFormat
 	CPIO = $10000
 	SHAR = $20000
 	TAR = $30000
+	USTAR = $30000 | 1
 	PAX = $30000 | 3
 	GNUTAR = $30000 | 4
 	ISO9660 = $40000
