@@ -160,6 +160,7 @@ Type TArchive
 	End Method
 
 	Method Data:Int(data:Byte Ptr, size:Size_T) Abstract
+	Method SetPassphrase:Int(passphrase:String) Abstract
 	Method Free() Abstract
 	
 	Method Delete()
@@ -190,7 +191,7 @@ Type TReadArchive Extends TArchive
 	Rem
 	bbdoc: Sets the passphrase for the archive.
 	End Rem
-	Method SetPassphrase:Int(passphrase:String)
+	Method SetPassphrase:Int(passphrase:String) Override
 		Return bmx_libarchive_archive_read_add_passphrase(archivePtr, passphrase)
 	End Method
 
@@ -597,7 +598,7 @@ Type TWriteArchive Extends TArchive
 	Rem
 	bbdoc: Sets a passphrase for the archive.
 	End Rem
-	Method SetPassphrase:Int(passphrase:String)
+	Method SetPassphrase:Int(passphrase:String) Override
 		Return bmx_libarchive_archive_write_set_passphrase(archivePtr, passphrase)
 	End Method
 
