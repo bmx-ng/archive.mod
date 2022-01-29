@@ -80,8 +80,12 @@ int bmx_libarchive_archive_read_data_skip(struct archive * arc) {
 }
 
 int bmx_libarchive_archive_read_open(struct archive * arc, BBObject * data) {
-	return archive_read_open2(arc, data, bmx_libarchive_open_cb, bmx_libarchive_read_cb,
-		bmx_libarchive_seek_cb, bmx_libarchive_close_cb);
+	archive_read_set_callback_data(arc, data);
+	archive_read_set_open_callback(arc, bmx_libarchive_open_cb);
+	archive_read_set_read_callback(arc, bmx_libarchive_read_cb);
+	archive_read_set_close_callback(arc, bmx_libarchive_close_cb);
+	archive_read_set_seek_callback(arc, bmx_libarchive_seek_cb);
+	return archive_read_open1(arc);
 }
 
 int bmx_libarchive_archive_read_set_read_callback(struct archive * arc) {
