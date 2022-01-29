@@ -1,0 +1,9 @@
+This is some data we want to compress
+
+
+blah 
+
+blah 
+
+
+blah
