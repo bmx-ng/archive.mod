@@ -117,6 +117,10 @@ End Enum
 
 Enum EArchiveFormat
 	CPIO = $10000
+	CPIO_POSIX = $10000 | 1
+	CPIO_BIN = $10000 | 2
+	CPIO_SVR4_NOCRC = $10000 | 4
+	CPIO_PWB = $10000 | 7
 	SHAR = $20000
 	TAR = $30000
 	USTAR = $30000 | 1
