@@ -3,6 +3,7 @@ SuperStrict
 Framework Archive.Zstd
 Import Archive.Raw
 Import BRL.TextStream
+Import BRL.StandardIO
 
 ' Write
 
