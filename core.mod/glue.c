@@ -31,6 +31,7 @@ void * archive_core_TArchiveCallbackData__read(BBObject * data, BBInt64 * count)
 void archive_core_TArchiveCallbackData__seek(BBObject * data, BBInt64 offset, int whence, BBInt64 * count);
 void * archive_core_TArchiveCallbackData__write(BBObject * data, void * buffer, size_t length, BBInt64 * count);
 int archive_core_TArchiveCallbackData__close(BBObject * data);
+char * archive_core_TReadArchive__passphraseCallback(BBObject * data);
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
@@ -58,6 +59,10 @@ int	bmx_libarchive_open_cb(struct archive * arc, void *data) {
 
 int	bmx_libarchive_close_cb(struct archive * arc, void *data) {
 	return archive_core_TArchiveCallbackData__close((BBObject*)data);
+}
+
+const char * bmx_libarchive_passphrase_cb(struct archive * arc, void * data) {
+	return archive_core_TReadArchive__passphraseCallback((BBObject*)data);
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
@@ -171,6 +176,10 @@ int bmx_libarchive_archive_read_set_format_option(struct archive * arc, BBString
 	return ret;
 }
 
+int bmx_libarchive_archive_read_set_passphrase_callback(struct archive * arc, BBObject * data) {
+	return archive_read_set_passphrase_callback(arc, data, bmx_libarchive_passphrase_cb);
+}
+
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
 
 
@@ -264,6 +273,32 @@ int bmx_libarchive_archive_write_set_format_option(struct archive * arc, BBStrin
 int bmx_libarchive_archive_write_open(struct archive * arc, BBObject * data) {
 	archive_write_set_bytes_in_last_block(arc, 1);
 	return archive_write_open(arc, data, bmx_libarchive_open_cb, bmx_libarchive_write_cb, bmx_libarchive_close_cb);
+}
+
+int bmx_libarchive_archive_write_set_option(struct archive * arc, BBString * option, BBString * value, BBString * moduleName) {
+	char * o = 0;
+	char * v = 0;
+	char * m = 0;
+
+	if (option != &bbEmptyString) {
+		o = bbStringToUTF8String(option);
+	}
+
+	if (value != &bbEmptyString) {
+		v = bbStringToUTF8String(value);
+	}
+
+	if (moduleName != &bbEmptyString) {
+		m = bbStringToUTF8String(moduleName);
+	}
+
+	int ret = archive_write_set_option(arc, m, o, v);
+
+	bbMemFree(m);
+	bbMemFree(v);
+	bbMemFree(o);
+
+	return ret;
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */

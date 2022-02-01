@@ -41,6 +41,7 @@ Extern
 	Function bmx_libarchive_archive_read_has_encrypted_entries:Int(handle:Byte Ptr)
 	Function bmx_libarchive_archive_read_set_filter_option:Int(handle:Byte Ptr, option:String, value:String, moduleName:String)
 	Function bmx_libarchive_archive_read_set_format_option:Int(handle:Byte Ptr, option:String, value:String, moduleName:String)
+	Function bmx_libarchive_archive_read_set_passphrase_callback:Int(handle:Byte Ptr, data:Object)
 
 	Function archive_read_set_read_callback:Int(handle:Byte Ptr, cb:Int(arc:Byte Ptr, cbData:Object, block:Byte Ptr Ptr))
 
@@ -57,6 +58,7 @@ Extern
 	Function bmx_libarchive_archive_write_set_filter_option:Int(handle:Byte Ptr, option:String, value:String, moduleName:String)
 	Function bmx_libarchive_archive_write_set_format_option:Int(handle:Byte Ptr, option:String, value:String, moduleName:String)
 	Function bmx_libarchive_archive_write_open:Int(handle:Byte Ptr, data:Object)
+	Function bmx_libarchive_archive_write_set_option:Int(handle:Byte Ptr, option:String, value:String, moduleName:String)
 		
 	Function bmx_libarchive_archive_clear_error(handle:Byte Ptr)
 	Function bmx_libarchive_archive_errno:Int(handle:Byte Ptr)
@@ -151,6 +153,12 @@ Enum EArchiveFileType:UInt
 	BlockDevice = 24576 ' block device - 0060000
 	Dir = 16384 ' directory - 0040000
 	Fifo = 4096 ' named pipe - 0010000
+End Enum
+
+Enum EArchiveEncryptionType
+	Zip
+	AES128
+	AES256
 End Enum
 
 Const ARCHIVE_FILTER_NONE:Int = 0

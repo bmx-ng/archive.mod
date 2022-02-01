@@ -160,7 +160,6 @@ Type TArchive
 	End Method
 
 	Method Data:Int(data:Byte Ptr, size:Size_T) Abstract
-	Method SetPassphrase:Int(passphrase:String) Abstract
 	Method Free() Abstract
 	
 	Method Delete()
@@ -176,6 +175,9 @@ End Rem
 Type TReadArchive Extends TArchive
 
 	Field callbackData:TArchiveCallbackData
+	Field passphraseCallback:String(archive:TReadArchive, data:Object)
+	Field passphraseCallbackData:Object
+	Field StaticArray pw:Byte[1024]
 
 	Function CreateArchive:TReadArchive()
 		Return New TReadArchive()
@@ -189,10 +191,27 @@ Type TReadArchive Extends TArchive
 	End Method
 
 	Rem
-	bbdoc: Sets the passphrase for the archive.
+	bbdoc: Registers a passphrase for the archive.
 	End Rem
-	Method SetPassphrase:Int(passphrase:String) Override
+	Method AddPassphrase:Int(passphrase:String)
 		Return bmx_libarchive_archive_read_add_passphrase(archivePtr, passphrase)
+	End Method
+
+Private
+	Function _passphraseCallback:Byte Ptr(archive:TReadArchive) { nomangle }
+		Local pass:String = archive.passphraseCallback(archive, archive.passphraseCallbackData)
+		Local length:Size_T = 1024
+		Return pass.ToUTF8StringBuffer(archive.pw, length)
+	End Function
+Public
+
+	Rem
+	bbdoc: Registers a callback function that will be invoked to get a passphrase for decryption after trying all the passphrases registered by #AddPassphrase.
+	End Rem
+	Method SetPassphraseCallback:Int(callback:String(archive:TReadArchive, data:Object), data:Object)
+		passphraseCallback = callback
+		passphraseCallbackData = data
+		Return bmx_libarchive_archive_read_set_passphrase_callback(archivePtr, self)
 	End Method
 
 	Rem
@@ -598,7 +617,7 @@ Type TWriteArchive Extends TArchive
 	Rem
 	bbdoc: Sets a passphrase for the archive.
 	End Rem
-	Method SetPassphrase:Int(passphrase:String) Override
+	Method SetPassphrase:Int(passphrase:String)
 		Return bmx_libarchive_archive_write_set_passphrase(archivePtr, passphrase)
 	End Method
 
@@ -628,6 +647,63 @@ Type TWriteArchive Extends TArchive
 	End Rem
 	Method SetFormatOption:Int(option:String, value:String = Null, moduleName:String = Null)
 		Return bmx_libarchive_archive_write_set_format_option(archivePtr, option, value, moduleName)
+	End Method
+
+	Rem
+	bbdoc: Sets the compression level for a compatible format/filter.
+	returns: #ARCHIVE_OK on success, or an error code.
+	about: 
+
+| Type    | Supported Compression Level | Notes                                                                                                                                     |
+|---------|:---------------------------:|-------------------------------------------------------------------------------------------------------------------------------------------|
+| bzip2   |            1 - 9            |                                                                                                                                           |
+| gzip    |            0 - 9            |                                                                                                                                           |
+| lz4     |            0 - 9            |                                                                                                                                           |
+| lzop    |            1 - 9            |                                                                                                                                           |
+| xz      |            0 - 9            |                                                                                                                                           |
+| zstd    |            1 - 22           |                                                                                                                                           |
+| 7zip    |            0 - 9            |                                                                                                                                           |
+| iso9660 |      0 - 9 (default 6)      |                                                                                                                                           |
+| zip     |            0 - 9            | A compression level of 0 switches the compression method to "store", other values will enable "deflate" compression with the given level. |
+
+	End Rem
+	Method SetCompressionLevel:Int(level:Int)
+		Return bmx_libarchive_archive_write_set_option(archivePtr, "compression-level", String(level), Null)
+	End Method
+
+	Rem
+	bbdoc: Sets the compression type for a compatible format/filter.
+	returns: #ARCHIVE_OK on success, or an error code.
+	about: 
+
+| Type | Notes                                                                                                                                                                                                                                    |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 7zip | The value is one of "store", "deflate", "bzip2", "lzma1", "lzma2" or "ppmd" to indicate how the following entries should be compressed.<br>Note that this setting is ignored for directories, symbolic links, and other special entries. |
+| zip  | The value is either "store" or "deflate" to indicate how the following entries should be compressed.<br>Note that this setting is ignored for directories, symbolic links, and other special entries.                                    |
+
+	End Rem
+	Method SetCompressionType:Int(compressionType:String)
+		Return bmx_libarchive_archive_write_set_option(archivePtr, "compression", compressionType, Null)
+	End Method
+
+	Rem
+	bbdoc: Sets the encryption type.
+	about: Only applies to Zip archives.
+	End Rem
+	Method SetEncryption:Int(encryptionType:EArchiveEncryptionType)
+		Local ty:String
+		Select encryptionType
+			Case EArchiveEncryptionType.Zip
+				ty = "zipcrypt"
+			Case EArchiveEncryptionType.AES128
+				ty = "aes128"
+			Case EArchiveEncryptionType.AES256
+				ty = "aes256"
+		End Select
+		If Not ty Then
+			Return ARCHIVE_FAILED
+		End If
+		Return bmx_libarchive_archive_write_set_option(archivePtr, "encryption", ty, Null)
 	End Method
 
 	Rem

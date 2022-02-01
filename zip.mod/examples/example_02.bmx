@@ -5,7 +5,7 @@ Import brl.standardio
 
 Local wa:TWriteArchive = New TWriteArchive
 wa.SetFormat(EArchiveFormat.ZIP)
-wa.SetFormatOption("encryption", "aes256") ' or zipcrypt, 
+wa.SetEncryption(EArchiveEncryptionType.AES256)
 wa.SetPassphrase("abc123")
 
 wa.Open("data.zip")
@@ -20,7 +20,7 @@ Local entry:TArchiveEntry = New TArchiveEntry
 
 Local ra:TReadArchive = New TReadArchive
 ra.SetFormat(EArchiveFormat.ZIP)
-ra.SetPassphrase("abc123")
+ra.AddPassphrase("abc123")
 
 ra.Open("data.zip")
 
