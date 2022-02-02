@@ -29,6 +29,8 @@ ModuleInfo "CC_OPTS: -DHAVE_ZLIB_H"
 ModuleInfo "CC_OPTS: -DHAVE_CONFIG_H -D_FILE_OFFSET_BITS=64"
 ?win32
 ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC"
+?linux
+ModuleInfo "CC_OPTS: -DHAVE_LIBMBEDCRYPTO -DHAVE_MBEDTLS_AES_H"
 ?
 
 Import Archive.Core
