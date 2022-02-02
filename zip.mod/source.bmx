@@ -27,7 +27,7 @@ Import Pub.zlib
 Import "../../pub.mod/zlib.mod/*.h"
 
 ?linux
-Import Net.mbedtls
+Import Net.mbedtlsCrypto
 
 Import "../../net.mod/mbedtls.mod/mbedtls/include/*.h"
 ?
