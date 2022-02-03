@@ -370,10 +370,6 @@ BBString * bmx_libarchive_archive_entry_hardlink(struct archive_entry * entry) {
 	return bbStringFromUTF8String(archive_entry_hardlink(entry));
 }
 
-BBString * bmx_libarchive_archive_entry_sourcepath(struct archive_entry * entry) {
-	return bbStringFromUTF8String(archive_entry_sourcepath(entry));
-}
-
 BBString * bmx_libarchive_archive_entry_symlink(struct archive_entry * entry) {
 	return bbStringFromUTF8String(archive_entry_symlink_utf8(entry));
 }
@@ -392,12 +388,6 @@ void bmx_libarchive_archive_entry_set_pathname(struct archive_entry * entry, BBS
 	char * n = bbStringToUTF8String(path);
 	archive_entry_set_pathname_utf8(entry, n);
 	archive_entry_set_pathname(entry, n);
-	bbMemFree(n);
-}
-
-void bmx_libarchive_archive_entry_set_sourcepath(struct archive_entry * entry, BBString * path) {
-	char * n = bbStringToUTF8String(path);
-	archive_entry_copy_sourcepath(entry, n);
 	bbMemFree(n);
 }
 
@@ -449,4 +439,60 @@ int bmx_libarchive_archive_entry_size_is_set(struct archive_entry * entry) {
 
 BBInt64 bmx_libarchive_archive_entry_size(struct archive_entry * entry) {
 	return archive_entry_size(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_atime(struct archive_entry * entry) {
+	return archive_entry_atime(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_atime_nsec(struct archive_entry * entry) {
+	return archive_entry_atime_nsec(entry);
+}
+
+int bmx_libarchive_archive_entry_atime_is_set(struct archive_entry * entry) {
+	return archive_entry_atime_is_set(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_birthtime(struct archive_entry * entry) {
+	return archive_entry_birthtime(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_birthtime_nsec(struct archive_entry * entry) {
+	return archive_entry_birthtime_nsec(entry);
+}
+
+int bmx_libarchive_archive_entry_birthtime_is_set(struct archive_entry * entry) {
+	return archive_entry_birthtime_is_set(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_ctime(struct archive_entry * entry) {
+	return archive_entry_ctime(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_ctime_nsec(struct archive_entry * entry) {
+	return archive_entry_ctime_nsec(entry);
+}
+
+int bmx_libarchive_archive_entry_ctime_is_set(struct archive_entry * entry) {
+	return archive_entry_ctime_is_set(entry);
+}
+
+void bmx_libarchive_archive_entry_set_atime(struct archive_entry * entry, time_t atime, BBInt64 nanoseconds) {
+	archive_entry_set_atime(entry, atime, nanoseconds);
+}
+
+void bmx_libarchive_archive_entry_unset_atime(struct archive_entry * entry) {
+	archive_entry_unset_atime(entry);
+}
+
+void bmx_libarchive_archive_entry_set_birthtime(struct archive_entry * entry, time_t btime, BBInt64 nanoseconds) {
+	archive_entry_set_birthtime(entry, btime, nanoseconds);
+}
+
+void bmx_libarchive_archive_entry_unset_birthtime(struct archive_entry * entry) {
+	archive_entry_unset_birthtime(entry);
+}
+
+void bmx_libarchive_archive_entry_unset_ctime(struct archive_entry * entry) {
+	archive_entry_unset_ctime(entry);
 }

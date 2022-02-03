@@ -766,6 +766,76 @@ Type TArchiveEntry
 	End Method
 	
 	Rem
+	bbdoc: Returns the entry access time, if set.
+	End Rem
+	Method AccessTime:Long()
+		return bmx_libarchive_archive_entry_atime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: 
+	End Rem
+	Method AccessTimeNano:Long()
+		Return bmx_libarchive_archive_entry_atime_nsec(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns #True if the access time is set.
+	End Rem
+	Method AccessTimeIsSet:Int()
+		Return bmx_libarchive_archive_entry_atime_is_set(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Sets the access time for the entry.
+	End Rem
+	Method SetAccessTime(atime:Long, nanoseconds:Long = 0)
+		bmx_libarchive_archive_entry_set_atime(entryPtr, atime, nanoseconds)
+	End Method
+
+	Rem
+	bbdoc: Unsets entry access time.
+	End Rem
+	Method UnsetAccessTime()
+		bmx_libarchive_archive_entry_unset_atime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns the entry birth time, if set.
+	End Rem
+	Method BirthTime:Long()
+		return bmx_libarchive_archive_entry_birthtime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: 
+	End Rem
+	Method BirthTimeNano:Long()
+		return bmx_libarchive_archive_entry_birthtime_nsec(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: 
+	End Rem
+	Method BirthTimeIsSet:Int()
+		return bmx_libarchive_archive_entry_birthtime_is_set(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Sets the birth time for the entry.
+	End Rem
+	Method SetBirthTime(btime:Long, nanoseconds:Long = 0)
+		bmx_libarchive_archive_entry_set_birthtime(entryPtr, btime, nanoseconds)
+	End Method
+
+	Rem
+	bbdoc: Unsets the birth time of the entry.
+	End Rem
+	Method UnsetBirthTime()
+		bmx_libarchive_archive_entry_unset_birthtime(entryPtr)
+	End Method
+
+	Rem
 	bbdoc: Erases the object, resetting all internal fields to the same state as a newly-created object.
 	about: This is provided to allow you to quickly recycle objects.
 	End Rem
@@ -778,6 +848,34 @@ Type TArchiveEntry
 	End Rem
 	Method Clone:TArchiveEntry()
 		Return TArchiveEntry._create(bmx_libarchive_archive_entry_clone(entryPtr))
+	End Method
+
+	Rem
+	bbdoc: Returns the entry creation time, if set.
+	End Rem
+	Method CreationTime:Long()
+		return bmx_libarchive_archive_entry_ctime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: 
+	End Rem
+	Method CreationTimeNano:Long()
+		return bmx_libarchive_archive_entry_ctime_nsec(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns #True if the creation time is set.
+	End Rem
+	Method CreationTimeIsSet:Int()
+		return bmx_libarchive_archive_entry_ctime_is_set(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Unsets the creation time.
+	End Rem
+	Method UnsetCreationTime()
+		bmx_libarchive_archive_entry_unset_ctime(entryPtr)
 	End Method
 
 	Rem
@@ -813,13 +911,6 @@ Type TArchiveEntry
 	End Rem
 	Method Pathname:String()
 		Return bmx_libarchive_archive_entry_pathname(entryPtr)
-	End Method
-	
-	Rem
-	bbdoc: Path on the disk for use by TReadArchive.Disk()
-	End Rem
-	Method SourcePath:String()
-		Return bmx_libarchive_archive_entry_sourcepath(entryPtr)
 	End Method
 	
 	Rem
@@ -885,13 +976,6 @@ Type TArchiveEntry
 		bmx_libarchive_archive_entry_set_size(entryPtr, size)
 	End Method
 
-	Rem
-	bbdoc: 
-	End Rem
-	Method SetSourcePath(path:String)
-		bmx_libarchive_archive_entry_set_sourcepath(entryPtr, path)
-	End Method
-	
 	Rem
 	bbdoc: 
 	End Rem
