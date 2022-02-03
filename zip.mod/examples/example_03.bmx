@@ -35,7 +35,14 @@ Wend
 
 ra.Free()
 
-Function GetPass:String(archive:TReadArchive, data:Object)
+Function GetPass:String(archive:TReadArchive, data:Object, cancel:Int Var)
+	Global count:Int
+	If count = 3 Then
+		cancel = True
+		Return Null
+	End If
+
+	count :+ 1
 	Local pass:String = Input("Enter Password (abc123): ")
 	Return pass
 End Function

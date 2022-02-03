@@ -175,7 +175,7 @@ End Rem
 Type TReadArchive Extends TArchive
 
 	Field callbackData:TArchiveCallbackData
-	Field passphraseCallback:String(archive:TReadArchive, data:Object)
+	Field passphraseCallback:String(archive:TReadArchive, data:Object, cancel:Int Var)
 	Field passphraseCallbackData:Object
 	Field StaticArray pw:Byte[1024]
 
@@ -199,19 +199,31 @@ Type TReadArchive Extends TArchive
 
 Private
 	Function _passphraseCallback:Byte Ptr(archive:TReadArchive) { nomangle }
-		Local pass:String = archive.passphraseCallback(archive, archive.passphraseCallbackData)
-		Local length:Size_T = 1024
-		Return pass.ToUTF8StringBuffer(archive.pw, length)
+		Local cancel:Int
+		Local pass:String = archive.passphraseCallback(archive, archive.passphraseCallbackData, cancel)
+		If cancel Then
+			Return Null
+		Else
+			Local length:Size_T = 1024
+			Return pass.ToUTF8StringBuffer(archive.pw, length)
+		End If
 	End Function
 Public
 
 	Rem
 	bbdoc: Registers a callback function that will be invoked to get a passphrase for decryption after trying all the passphrases registered by #AddPassphrase.
 	End Rem
-	Method SetPassphraseCallback:Int(callback:String(archive:TReadArchive, data:Object), data:Object)
-		passphraseCallback = callback
-		passphraseCallbackData = data
-		Return bmx_libarchive_archive_read_set_passphrase_callback(archivePtr, self)
+	Method SetPassphraseCallback:Int(callback:String(archive:TReadArchive, data:Object, cancel:Int Var), data:Object)
+		Local cb:Byte Ptr = callback
+		If Not cb Then
+			passphraseCallback = Null
+			passphraseCallbackData = Null
+			Return bmx_libarchive_archive_read_set_passphrase_callback(archivePtr, Null)
+		Else
+			passphraseCallback = callback
+			passphraseCallbackData = data
+			Return bmx_libarchive_archive_read_set_passphrase_callback(archivePtr, self)
+		End If
 	End Method
 
 	Rem
@@ -348,8 +360,11 @@ Type TArchiveStream Extends TStream
 
 	Method Read:Long( buf:Byte Ptr,count:Long )
 		Local size:Long = archive.Data(buf, Size_T(count))
-		If Not size Then
+		If size <= 0 Then
 			_eof = True
+			If size < 0 Then
+				size = 0
+			End If
 		End If
 		Return size
 	End Method

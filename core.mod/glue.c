@@ -177,7 +177,11 @@ int bmx_libarchive_archive_read_set_format_option(struct archive * arc, BBString
 }
 
 int bmx_libarchive_archive_read_set_passphrase_callback(struct archive * arc, BBObject * data) {
-	return archive_read_set_passphrase_callback(arc, data, bmx_libarchive_passphrase_cb);
+	if (data == &bbNullObject) {
+		return archive_read_set_passphrase_callback(arc, NULL, NULL);
+	} else {
+		return archive_read_set_passphrase_callback(arc, data, bmx_libarchive_passphrase_cb);
+	}
 }
 
 /* +++++++++++++++++++++++++++++++++++++++++++++++++++++ */
