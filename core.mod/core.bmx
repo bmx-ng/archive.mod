@@ -879,6 +879,13 @@ Type TArchiveEntry
 	End Method
 
 	Rem
+	bbdoc: Returns the entry file type.
+	End Rem
+	Method FileType:EArchiveFileType()
+		Return bmx_libarchive_archive_entry_filetype(entryPtr)
+	End Method
+
+	Rem
 	bbdoc: Destination of the hardlink.
 	End Rem
 	Method Hardlink:String()

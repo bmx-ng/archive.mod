@@ -496,3 +496,7 @@ void bmx_libarchive_archive_entry_unset_birthtime(struct archive_entry * entry) 
 void bmx_libarchive_archive_entry_unset_ctime(struct archive_entry * entry) {
 	archive_entry_unset_ctime(entry);
 }
+
+int bmx_libarchive_archive_entry_filetype(struct archive_entry * entry) {
+	return archive_entry_filetype(entry);
+}

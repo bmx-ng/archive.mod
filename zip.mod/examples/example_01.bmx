@@ -25,6 +25,7 @@ ra.Open("data.zip")
 While ra.ReadNextHeader(entry) = ARCHIVE_OK
 	Print "File : " + entry.Pathname()
 	Print "Size : " + entry.Size()
+	Print "Type : " + entry.FileType().ToString()
 	Local s:String = LoadText(ra.DataStream())
 	Print "String size   : " + s.Length
 	Print "First n chars : " + s[0..17]
