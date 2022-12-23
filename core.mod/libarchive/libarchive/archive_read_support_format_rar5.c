@@ -1772,13 +1772,28 @@ static int process_head_file(struct archive_read* a, struct rar5* rar,
 		}
 	}
 
-	/* If we're currently switching volumes, ignore the new definition of
-	 * window_size. */
-	if(rar->cstate.switch_multivolume == 0) {
-		/* Values up to 64M should fit into ssize_t on every
-		 * architecture. */
-		rar->cstate.window_size = (ssize_t) window_size;
+	if(rar->cstate.window_size < (ssize_t) window_size &&
+	    rar->cstate.window_buf)
+	{
+		/* If window_buf has been allocated before, reallocate it, so
+		 * that its size will match new window_size. */
+
+		uint8_t* new_window_buf =
+			realloc(rar->cstate.window_buf, window_size);
+
+		if(!new_window_buf) {
+			archive_set_error(&a->archive, ARCHIVE_ERRNO_PROGRAMMER,
+				"Not enough memory when trying to realloc the window "
+				"buffer.");
+			return ARCHIVE_FATAL;
+		}
+
+		rar->cstate.window_buf = new_window_buf;
 	}
+
+	/* Values up to 64M should fit into ssize_t on every
+	 * architecture. */
+	rar->cstate.window_size = (ssize_t) window_size;
 
 	if(rar->file.solid > 0 && rar->file.solid_window_size == 0) {
 		/* Solid files have to have the same window_size across
@@ -2806,11 +2821,13 @@ static int parse_block_header(struct archive_read* a, const uint8_t* p,
 	    ^ (uint8_t) (*block_size >> 16);
 
 	if(calculated_cksum != hdr->block_cksum) {
+#ifndef DONT_FAIL_ON_CRC_ERROR
 		archive_set_error(&a->archive, ARCHIVE_ERRNO_FILE_FORMAT,
 		    "Block checksum error: got 0x%x, expected 0x%x",
 		    hdr->block_cksum, calculated_cksum);
 
 		return ARCHIVE_FATAL;
+#endif
 	}
 
 	return ARCHIVE_OK;
@@ -3716,6 +3733,16 @@ static int do_uncompress_file(struct archive_read* a) {
 		rar->cstate.initialized = 1;
 	}
 
+	/* Don't allow extraction if window_size is invalid. */
+	if(rar->cstate.window_size == 0) {
+		archive_set_error(&a->archive,
+			ARCHIVE_ERRNO_FILE_FORMAT,
+			"Invalid window size declaration in this file");
+
+		/* This should never happen in valid files. */
+		return ARCHIVE_FATAL;
+	}
+
 	if(rar->cstate.all_filters_applied == 1) {
 		/* We use while(1) here, but standard case allows for just 1
 		 * iteration. The loop will iterate if process_block() didn't
@@ -3886,6 +3913,13 @@ static int do_unpack(struct archive_read* a, struct rar5* rar,
 			case GOOD:
 				/* fallthrough */
 			case BEST:
+				/* No data is returned here. But because a sparse-file aware
+				 * caller (like archive_read_data_into_fd) may treat zero-size
+				 * as a sparse file block, we need to update the offset
+				 * accordingly. At this point the decoder doesn't have any
+				 * pending uncompressed data blocks, so the current position in
+				 * the output file should be last_write_ptr. */
+				if (offset) *offset = rar->cstate.last_write_ptr;
 				return uncompress_file(a);
 			default:
 				archive_set_error(&a->archive,

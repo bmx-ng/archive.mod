@@ -1,6 +1,5 @@
-/*
- * Copyright (c) 2003-2012 Tim Kientzle
- * Copyright (c) 2012 Andres Mejia
+/*-
+ * Copyright (c) 2020 Ben Wagner
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -23,14 +22,32 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+#include "test.h"
+__FBSDID("$FreeBSD$");
 
-#ifndef TEST_UTILS_H
-#define TEST_UTILS_H
+/*
+ * The pax size attribute can be used to override the size.
+ * It should be validated the same way the normal size is validated.
+ * The test data is fuzzer output from
+ * https://bugs.chromium.org/p/oss-fuzz/issues/detail?id=48467 .
+ */
+DEFINE_TEST(test_read_format_tar_invalid_pax_size)
+{
+	/*
+	 * An archive that contains a PAX 'size' record with a large negative value.
+	 */
+	struct archive_entry *ae;
+	struct archive *a;
+	const char *refname = "test_read_format_tar_invalid_pax_size.tar";
 
-#include <stddef.h>
-#include <stdint.h>
-
-/* Fill a buffer with pseudorandom data */
-void fill_with_pseudorandom_data(void* buffer, size_t size);
-
-#endif /* TEST_UTILS_H */
+	extract_reference_file(refname);
+	assert((a = archive_read_new()) != NULL);
+	assertEqualInt(ARCHIVE_OK, archive_read_support_filter_all(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_support_format_all(a));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_open_filename(a, refname, 10240));
+	/* This assert will pass a normal debug build without the pax size check. */
+	/* Run this test with `-fsanitize=undefined` to verify.                   */
+	assertEqualIntA(a, ARCHIVE_FATAL, archive_read_next_header(a, &ae));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}

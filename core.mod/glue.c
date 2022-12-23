@@ -375,7 +375,11 @@ BBString * bmx_libarchive_archive_entry_symlink(struct archive_entry * entry) {
 }
 
 BBString * bmx_libarchive_archive_entry_pathname(struct archive_entry * entry) {
-	return bbStringFromUTF8String(archive_entry_pathname_utf8(entry));
+	char * n = archive_entry_pathname_utf8(entry);
+	if (n == NULL) {
+		n = archive_entry_pathname(entry);
+	}
+	return bbStringFromUTF8String(n);
 }
 
 void bmx_libarchive_archive_entry_set_link(struct archive_entry * entry, BBString * path) {

@@ -418,8 +418,9 @@ la_linkname_from_pathw(const wchar_t *path, wchar_t **outbuf, int *linktype)
 	    FILE_FLAG_OPEN_REPARSE_POINT;
 	int ret;
 
-	h = CreateFileW(path, 0, FILE_SHARE_READ, NULL, OPEN_EXISTING, flag,
-	    NULL);
+	h = CreateFileW(path, 0,
+	    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
+	    OPEN_EXISTING, flag, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 		la_dosmaperr(GetLastError());
 		return (-1);
@@ -449,22 +450,14 @@ entry_symlink_from_pathw(struct archive_entry *entry, const wchar_t *path)
 	return;
 }
 
-static struct archive_vtable *
-archive_read_disk_vtable(void)
-{
-	static struct archive_vtable av;
-	static int inited = 0;
-
-	if (!inited) {
-		av.archive_free = _archive_read_free;
-		av.archive_close = _archive_read_close;
-		av.archive_read_data_block = _archive_read_data_block;
-		av.archive_read_next_header = _archive_read_next_header;
-		av.archive_read_next_header2 = _archive_read_next_header2;
-		inited = 1;
-	}
-	return (&av);
-}
+static const struct archive_vtable
+archive_read_disk_vtable = {
+	.archive_free = _archive_read_free,
+	.archive_close = _archive_read_close,
+	.archive_read_data_block = _archive_read_data_block,
+	.archive_read_next_header = _archive_read_next_header,
+	.archive_read_next_header2 = _archive_read_next_header2,
+};
 
 const char *
 archive_read_disk_gname(struct archive *_a, la_int64_t gid)
@@ -541,7 +534,7 @@ archive_read_disk_new(void)
 		return (NULL);
 	a->archive.magic = ARCHIVE_READ_DISK_MAGIC;
 	a->archive.state = ARCHIVE_STATE_NEW;
-	a->archive.vtable = archive_read_disk_vtable();
+	a->archive.vtable = &archive_read_disk_vtable;
 	a->entry = archive_entry_new2(&a->archive);
 	a->lookup_uname = trivial_lookup_uname;
 	a->lookup_gname = trivial_lookup_gname;
@@ -1081,7 +1074,9 @@ next_entry(struct archive_read_disk *a, struct tree *t,
 		else
 			flags |= FILE_FLAG_SEQUENTIAL_SCAN;
 		t->entry_fh = CreateFileW(tree_current_access_path(t),
-		    GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, flags, NULL);
+		    GENERIC_READ,
+		    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+		    NULL, OPEN_EXISTING, flags, NULL);
 		if (t->entry_fh == INVALID_HANDLE_VALUE) {
 			la_dosmaperr(GetLastError());
 			archive_set_error(&a->archive, errno,
@@ -2054,7 +2049,8 @@ tree_current_file_information(struct tree *t, BY_HANDLE_FILE_INFORMATION *st,
 	
 	if (sim_lstat && tree_current_is_physical_link(t))
 		flag |= FILE_FLAG_OPEN_REPARSE_POINT;
-	h = CreateFileW(tree_current_access_path(t), 0, FILE_SHARE_READ, NULL,
+	h = CreateFileW(tree_current_access_path(t), 0,
+	    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 	    OPEN_EXISTING, flag, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 		la_dosmaperr(GetLastError());
@@ -2283,7 +2279,8 @@ archive_read_disk_entry_from_file(struct archive *_a,
 			} else
 				desiredAccess = GENERIC_READ;
 
-			h = CreateFileW(path, desiredAccess, FILE_SHARE_READ, NULL,
+			h = CreateFileW(path, desiredAccess,
+			    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 			    OPEN_EXISTING, flag, NULL);
 			if (h == INVALID_HANDLE_VALUE) {
 				la_dosmaperr(GetLastError());
@@ -2345,7 +2342,8 @@ archive_read_disk_entry_from_file(struct archive *_a,
 		if (fd >= 0) {
 			h = (HANDLE)_get_osfhandle(fd);
 		} else {
-			h = CreateFileW(path, GENERIC_READ, FILE_SHARE_READ, NULL,
+			h = CreateFileW(path, GENERIC_READ,
+			    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, NULL,
 			    OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 			if (h == INVALID_HANDLE_VALUE) {
 				la_dosmaperr(GetLastError());

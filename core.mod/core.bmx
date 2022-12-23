@@ -28,11 +28,13 @@ End Rem
 Module Archive.Core
 
 
-ModuleInfo "Version: 1.06"
+ModuleInfo "Version: 1.07"
 ModuleInfo "License: BSD"
 ModuleInfo "Copyright: libarchive - 2003-2018 Tim Kientzle"
-ModuleInfo "Copyright: Wrapper - 2013-2019 Bruce A Henderson"
+ModuleInfo "Copyright: Wrapper - 2013-2022 Bruce A Henderson"
 
+ModuleInfo "History: 1.07"
+ModuleInfo "History: Update to libarchive 3.6.2.2d32907."
 ModuleInfo "History: 1.06"
 ModuleInfo "History: Update to libarchive 3.5.2.b967588."
 ModuleInfo "History: 1.05"
