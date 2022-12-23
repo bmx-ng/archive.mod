@@ -52,9 +52,12 @@ typedef struct {
 	uint64_t memusage;
 
 	/// The filter chain of this Block in human-readable form
-	char filter_chain[FILTERS_STR_SIZE];
+	char *filter_chain;
 
 } block_header_info;
+
+#define BLOCK_HEADER_INFO_INIT { .filter_chain = NULL }
+#define block_header_info_end(bhi) free((bhi)->filter_chain)
 
 
 /// Strings ending in a colon. These are used for lines like
@@ -523,9 +526,7 @@ parse_block_header(file_pair *pair, const lzma_index_iter *iter,
 
 	case LZMA_DATA_ERROR:
 		// Free the memory allocated by lzma_block_header_decode().
-		for (size_t i = 0; filters[i].id != LZMA_VLI_UNKNOWN; ++i)
-			free(filters[i].options);
-
+		lzma_filters_free(filters, NULL);
 		goto data_error;
 
 	default:
@@ -544,25 +545,42 @@ parse_block_header(file_pair *pair, const lzma_index_iter *iter,
 
 	// Determine the minimum XZ Utils version that supports this Block.
 	//
-	// Currently the only thing that 5.0.0 doesn't support is empty
-	// LZMA2 Block. This decoder bug was fixed in 5.0.2.
-	{
+	//   - ARM64 filter needs 5.4.0.
+	//
+	//   - 5.0.0 doesn't support empty LZMA2 streams and thus empty
+	//     Blocks that use LZMA2. This decoder bug was fixed in 5.0.2.
+	if (xfi->min_version < 50040002U) {
+		for (size_t i = 0; filters[i].id != LZMA_VLI_UNKNOWN; ++i) {
+			if (filters[i].id == LZMA_FILTER_ARM64) {
+				xfi->min_version = 50040002U;
+				break;
+			}
+		}
+	}
+
+	if (xfi->min_version < 50000022U) {
 		size_t i = 0;
 		while (filters[i + 1].id != LZMA_VLI_UNKNOWN)
 			++i;
 
 		if (filters[i].id == LZMA_FILTER_LZMA2
-				&& iter->block.uncompressed_size == 0
-				&& xfi->min_version < 50000022U)
+				&& iter->block.uncompressed_size == 0)
 			xfi->min_version = 50000022U;
 	}
 
 	// Convert the filter chain to human readable form.
-	message_filters_to_str(bhi->filter_chain, filters, false);
+	const lzma_ret str_ret = lzma_str_from_filters(
+			&bhi->filter_chain, filters,
+			LZMA_STR_DECODER | LZMA_STR_GETOPT_LONG, NULL);
 
 	// Free the memory allocated by lzma_block_header_decode().
-	for (size_t i = 0; filters[i].id != LZMA_VLI_UNKNOWN; ++i)
-		free(filters[i].options);
+	lzma_filters_free(filters, NULL);
+
+	// Check if the stringification succeeded.
+	if (str_ret != LZMA_OK) {
+		message_error("%s: %s", pair->src_name, message_strm(str_ret));
+		return true;
+	}
 
 	return false;
 
@@ -858,9 +876,6 @@ print_info_adv(xz_file_info *xfi, file_pair *pair)
 	// Cache the verbosity level to a local variable.
 	const bool detailed = message_verbosity_get() >= V_DEBUG;
 
-	// Information collected from Block Headers
-	block_header_info bhi;
-
 	// Print information about the Blocks but only if there is
 	// at least one Block.
 	if (lzma_index_block_count(xfi->idx) > 0) {
@@ -910,8 +925,11 @@ print_info_adv(xz_file_info *xfi, file_pair *pair)
 
 		// Iterate over the Blocks.
 		while (!lzma_index_iter_next(&iter, LZMA_INDEX_ITER_BLOCK)) {
+			// If in detailed mode, collect the information from
+			// Block Header before starting to print the next line.
+			block_header_info bhi = BLOCK_HEADER_INFO_INIT;
 			if (detailed && parse_details(pair, &iter, &bhi, xfi))
-					return true;
+				return true;
 
 			const char *cols1[4] = {
 				uint64_to_str(iter.stream.number, 0),
@@ -995,6 +1013,7 @@ print_info_adv(xz_file_info *xfi, file_pair *pair)
 			}
 
 			putchar('\n');
+			block_header_info_end(&bhi);
 		}
 	}
 
@@ -1052,9 +1071,9 @@ print_info_robot(xz_file_info *xfi, file_pair *pair)
 				iter.stream.padding);
 
 		lzma_index_iter_rewind(&iter);
-		block_header_info bhi;
 
 		while (!lzma_index_iter_next(&iter, LZMA_INDEX_ITER_BLOCK)) {
+			block_header_info bhi = BLOCK_HEADER_INFO_INIT;
 			if (message_verbosity_get() >= V_DEBUG
 					&& parse_details(
 						pair, &iter, &bhi, xfi))
@@ -1085,6 +1104,7 @@ print_info_robot(xz_file_info *xfi, file_pair *pair)
 						bhi.filter_chain);
 
 			putchar('\n');
+			block_header_info_end(&bhi);
 		}
 	}
 

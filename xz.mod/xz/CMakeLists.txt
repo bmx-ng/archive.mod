@@ -13,11 +13,10 @@
 #   - No replacement getopt_long(), libc must have it
 #   - No sandboxing support
 #   - No translations
-#   - No xz symlinks are installed
 #
 # Other missing things:
 #   - No xzgrep or other scripts or their symlinks
-#   - No tests (no test failures either!)
+#   - No xz tests (liblzma tests only)
 #
 # NOTE: Even if the code compiles without warnings, the end result may be
 # different than via ./configure. Specifically, the list of #defines
@@ -49,8 +48,11 @@
 
 cmake_minimum_required(VERSION 3.13...3.16 FATAL_ERROR)
 
+include(CMakePushCheckState)
+include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckStructHasMember)
+include(CheckCSourceCompiles)
 include(cmake/tuklib_integer.cmake)
 include(cmake/tuklib_cpucores.cmake)
 include(cmake/tuklib_physmem.cmake)
@@ -77,7 +79,7 @@ set(CMAKE_MACOSX_BUNDLE OFF)
 add_compile_definitions(
     # Package info:
     PACKAGE_NAME="XZ Utils"
-    PACKAGE_BUGREPORT="lasse.collin@tukaani.org"
+    PACKAGE_BUGREPORT="xz@tukaani.org"
     PACKAGE_URL="https://tukaani.org/xz/"
 
     # Features:
@@ -87,6 +89,7 @@ add_compile_definitions(
     HAVE_DECODERS
     HAVE_DECODER_ARM
     HAVE_DECODER_ARMTHUMB
+    HAVE_DECODER_ARM64
     HAVE_DECODER_DELTA
     HAVE_DECODER_IA64
     HAVE_DECODER_LZMA1
@@ -97,6 +100,7 @@ add_compile_definitions(
     HAVE_ENCODERS
     HAVE_ENCODER_ARM
     HAVE_ENCODER_ARMTHUMB
+    HAVE_ENCODER_ARM64
     HAVE_ENCODER_DELTA
     HAVE_ENCODER_IA64
     HAVE_ENCODER_LZMA1
@@ -109,6 +113,7 @@ add_compile_definitions(
     HAVE_MF_BT4
     HAVE_MF_HC3
     HAVE_MF_HC4
+    HAVE_LZIP_DECODER
 
     # Standard headers and types are available:
     HAVE_STDBOOL_H
@@ -164,7 +169,17 @@ endif()
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 find_package(Threads REQUIRED)
 if(CMAKE_USE_WIN32_THREADS_INIT)
-    add_compile_definitions(MYTHREAD_VISTA)
+    if(CMAKE_SIZEOF_VOID_P EQUAL 4)
+        # Define to 1 when using Windows 95 (and thus XP) compatible threads. This
+        # avoids use of features that were added in Windows Vista.
+        # This is used for 32-bit x86 builds for compatibility reasons since it
+        # makes no measurable difference in performance compared to Vista threads.
+        add_compile_definitions(MYTHREAD_WIN95)
+    else()
+        # Define to 1 when using Windows Vista compatible threads. This uses features
+        # that are not available on Windows XP.
+        add_compile_definitions(MYTHREAD_VISTA)
+    endif()
 else()
     add_compile_definitions(MYTHREAD_POSIX)
 
@@ -269,12 +284,15 @@ add_library(liblzma
     src/liblzma/common/index_encoder.c
     src/liblzma/common/index_encoder.h
     src/liblzma/common/index_hash.c
+    src/liblzma/common/lzip_decoder.c
+    src/liblzma/common/lzip_decoder.h
     src/liblzma/common/memcmplen.h
     src/liblzma/common/outqueue.c
     src/liblzma/common/outqueue.h
     src/liblzma/common/stream_buffer_decoder.c
     src/liblzma/common/stream_buffer_encoder.c
     src/liblzma/common/stream_decoder.c
+    src/liblzma/common/stream_decoder_mt.c
     src/liblzma/common/stream_decoder.h
     src/liblzma/common/stream_encoder.c
     src/liblzma/common/stream_encoder_mt.c
@@ -282,6 +300,7 @@ add_library(liblzma
     src/liblzma/common/stream_flags_common.h
     src/liblzma/common/stream_flags_decoder.c
     src/liblzma/common/stream_flags_encoder.c
+    src/liblzma/common/string_conversion.c
     src/liblzma/common/vli_decoder.c
     src/liblzma/common/vli_encoder.c
     src/liblzma/common/vli_size.c
@@ -321,6 +340,7 @@ add_library(liblzma
     src/liblzma/rangecoder/range_encoder.h
     src/liblzma/simple/arm.c
     src/liblzma/simple/armthumb.c
+    src/liblzma/simple/arm64.c
     src/liblzma/simple/ia64.c
     src/liblzma/simple/powerpc.c
     src/liblzma/simple/simple_coder.c
@@ -371,14 +391,30 @@ if(NOT TUKLIB_CPUCORES_FOUND OR NOT TUKLIB_PHYSMEM_FOUND)
             "To build anyway, edit this CMakeLists.txt to ignore this error.")
 endif()
 
+# Check for __attribute__((__constructor__)) support.
+# This needs -Werror because some compilers just warn
+# about this being unsupported.
+cmake_push_check_state()
+set(CMAKE_REQUIRED_FLAGS "-Werror")
+check_c_source_compiles("
+        __attribute__((__constructor__))
+        static void my_constructor_func(void) { return; }
+        int main(void) { return 0; }
+    "
+    HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR)
+cmake_pop_check_state()
+tuklib_add_definition_if(liblzma HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR)
+
+# cpuid.h
+check_include_file(cpuid.h HAVE_CPUID_H)
+tuklib_add_definition_if(liblzma HAVE_CPUID_H)
+
 # immintrin.h:
-include(CheckIncludeFile)
 check_include_file(immintrin.h HAVE_IMMINTRIN_H)
 if(HAVE_IMMINTRIN_H)
     target_compile_definitions(liblzma PRIVATE HAVE_IMMINTRIN_H)
 
     # SSE2 intrinsics:
-    include(CheckCSourceCompiles)
     check_c_source_compiles("
             #include <immintrin.h>
             int main(void)
@@ -390,6 +426,24 @@ if(HAVE_IMMINTRIN_H)
         "
         HAVE__MM_MOVEMASK_EPI8)
     tuklib_add_definition_if(liblzma HAVE__MM_MOVEMASK_EPI8)
+
+    # CLMUL intrinsic:
+    check_c_source_compiles("
+            #include <immintrin.h>
+            #if defined(__e2k__) && __iset__ < 6
+            #   error
+            #endif
+            #if (defined(__GNUC__) || defined(__clang__)) && !defined(__EDG__)
+            __attribute__((__target__(\"ssse3,sse4.1,pclmul\")))
+            #endif
+            __m128i my_clmul(__m128i a, __m128i b)
+            {
+                return _mm_clmulepi64_si128(a, b, 0);
+            }
+            int main(void) { return 0; }
+    "
+    HAVE_USABLE_CLMUL)
+    tuklib_add_definition_if(liblzma HAVE_USABLE_CLMUL)
 endif()
 
 # Support -fvisiblity=hidden when building shared liblzma.
@@ -407,20 +461,41 @@ if(WIN32)
         # Add the Windows resource file for liblzma.dll.
         target_sources(liblzma PRIVATE src/liblzma/liblzma_w32res.rc)
 
+        set_target_properties(liblzma PROPERTIES
+            LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/common/common_w32res.rc"
+        )
+
         # Export the public API symbols with __declspec(dllexport).
         target_compile_definitions(liblzma PRIVATE DLL_EXPORT)
     else()
         # Disable __declspec(dllimport) when linking against static liblzma.
         target_compile_definitions(liblzma INTERFACE LZMA_API_STATIC)
     endif()
-elseif(CMAKE_SYSTEM_NAME MATCHES "^Linux$|^FreeBSD$")
-    # Symbol versioning for shared liblzma. This doesn't affect static builds.
+elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    # GNU/Linux-specific symbol versioning for shared liblzma.
+    # Note that adding link options doesn't affect static builds
+    # but HAVE_SYMBOL_VERSIONS_LINUX must not be used with static builds
+    # because it would put symbol versions into the static library which
+    # can cause problems. It's clearer if all symver related things are
+    # omitted when not building a shared library.
+    #
+    # NOTE: Set it explicitly to 1 to make it clear that versioning is
+    # done unconditionally in the C files.
+    target_compile_definitions(liblzma PRIVATE HAVE_SYMBOL_VERSIONS_LINUX=1)
     target_link_options(liblzma PRIVATE
-        "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma.map"
+        "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_linux.map"
     )
     set_target_properties(liblzma PROPERTIES
-        LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma.map"
-        LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/common/common_w32res.rc"
+        LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_linux.map"
+    )
+elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
+    # Symbol versioning for shared liblzma for non-GNU/Linux.
+    # FIXME? What about Solaris?
+    target_link_options(liblzma PRIVATE
+        "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_generic.map"
+    )
+    set_target_properties(liblzma PROPERTIES
+        LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_generic.map"
     )
 endif()
 
@@ -670,7 +745,97 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
                     COMPONENT xz)
 
-    install(FILES src/xz/xz.1
-            DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
-            COMPONENT xz)
+    if(UNIX)
+        install(FILES src/xz/xz.1
+                DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
+                COMPONENT xz)
+
+        option(CREATE_XZ_SYMLINKS "Create unxz and xzcat symlinks" ON)
+        option(CREATE_LZMA_SYMLINKS "Create lzma, unlzma, and lzcat symlinks"
+               ON)
+        set(XZ_LINKS)
+
+        if(CREATE_XZ_SYMLINKS)
+            list(APPEND XZ_LINKS "unxz" "xzcat")
+        endif()
+
+        if(CREATE_LZMA_SYMLINKS)
+            list(APPEND XZ_LINKS "lzma" "unlzma" "lzcat")
+        endif()
+
+        # Create symlinks in the build directory and then install them.
+        #
+        # The symlinks do not likely need any special extension since
+        # even on Windows the symlink can still be executed without
+        # the .exe extension.
+        foreach(LINK IN LISTS XZ_LINKS)
+            add_custom_target("${LINK}" ALL
+                "${CMAKE_COMMAND}" -E create_symlink
+                    "$<TARGET_FILE_NAME:xz>" "${LINK}"
+                BYPRODUCTS "${LINK}"
+                VERBATIM)
+            install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${LINK}"
+                    DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                    COMPONENT xz)
+            add_custom_target("${LINK}.1" ALL
+                "${CMAKE_COMMAND}" -E create_symlink "xz.1" "${LINK}.1"
+                BYPRODUCTS "${LINK}.1"
+                VERBATIM)
+            install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${LINK}.1"
+                    DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
+                    COMPONENT xz)
+        endforeach()
+    endif()
+endif()
+
+
+#############################################################################
+# Tests
+#############################################################################
+
+include(CTest)
+
+if(BUILD_TESTING)
+    set(LIBLZMA_TESTS
+        test_bcj_exact_size
+        test_block_header
+        test_check
+        test_filter_flags
+        test_hardware
+        test_index
+        test_memlimit
+        test_stream_flags
+        test_vli
+    )
+
+    foreach(TEST IN LISTS LIBLZMA_TESTS)
+        add_executable("${TEST}" "tests/${TEST}.c")
+
+        target_include_directories("${TEST}" PRIVATE
+            src/common
+            src/liblzma/api
+            lib
+        )
+
+        target_link_libraries("${TEST}" PRIVATE liblzma)
+
+        # Put the test programs into their own subdirectory so they don't
+        # pollute the top-level dir which might contain xz and xzdec.
+        set_target_properties("${TEST}" PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/tests_bin"
+        )
+
+        add_test(NAME "${TEST}"
+                 COMMAND "${CMAKE_CURRENT_BINARY_DIR}/tests_bin/${TEST}"
+        )
+
+        # Set srcdir environment variable so that the tests find their
+        # input files from the source tree.
+        #
+        # Set the return code for skipped tests to match Automake convention.
+        set_tests_properties("${TEST}" PROPERTIES
+            ENVIRONMENT "srcdir=${CMAKE_CURRENT_LIST_DIR}/tests"
+            SKIP_RETURN_CODE 77
+        )
+    endforeach()
 endif()
