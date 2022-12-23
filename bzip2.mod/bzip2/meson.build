@@ -1,8 +1,8 @@
 project(
   'bzip2',
   ['c'],
-  version : '1.0.7',
-  meson_version : '>= 0.48.0',
+  version : '1.1.0',
+  meson_version : '>= 0.50.0',
   default_options : ['c_std=c89', 'warning_level=1'],
 )
 
@@ -64,8 +64,13 @@ add_project_arguments(cc.get_supported_arguments([
 
 add_project_arguments('-D_GNU_SOURCE', language : 'c')
 
+os_defines = []
 if host_machine.system() == 'windows'
-  add_project_arguments('-D_WIN32', language : 'c')
+  os_defines += '-DBZ_LCCWIN32=1'
+  os_defines += '-DBZ_UNIX=0'
+else
+  os_defines += '-DBZ_LCCWIN32=0'
+  os_defines += '-DBZ_UNIX=1'
 endif
 
 c_args = []
@@ -93,7 +98,7 @@ bz_sources = ['blocksort.c', 'huffman.c', 'crctable.c', 'randtable.c', 'compress
 ##
 ## KEEP THESE IN SYNC WITH CMakeLists.txt OR STUFF WILL BREAK!
 bz2_lt_current  = 1
-bz2_lt_revision = 7
+bz2_lt_revision = 9
 bz2_lt_age      = 0
 
 bz2_soversion   = bz2_lt_current - bz2_lt_age
@@ -126,6 +131,7 @@ bzip2 = executable(
   ['bzip2.c'],
   link_with : [libbzip2],
   install : true,
+  c_args : os_defines,
 )
 
 executable(
@@ -133,6 +139,7 @@ executable(
   ['bzip2recover.c'],
   link_with : [libbzip2],
   install : true,
+  c_args : os_defines,
 )
 
 ## Install wrapper scripts
