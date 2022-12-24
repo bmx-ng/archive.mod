@@ -35,6 +35,7 @@ ModuleInfo "Copyright: Wrapper - 2013-2022 Bruce A Henderson"
 
 ModuleInfo "History: 1.07"
 ModuleInfo "History: Update to libarchive 3.6.2.2d32907."
+ModuleInfo "History: Added DataStream() to TWriteArchive, returning a writeable TStream."
 ModuleInfo "History: 1.06"
 ModuleInfo "History: Update to libarchive 3.5.2.b967588."
 ModuleInfo "History: 1.05"
@@ -307,7 +308,7 @@ Public
 	about: This can be used by any #TStream supported functionality.
 	End Rem
 	Method DataStream:TStream()
-		Return New TArchiveStream(Self)
+		Return New TArchiveInputStream(Self)
 	End Method
 
 	Rem
@@ -350,7 +351,7 @@ End Type
 Rem
 bbdoc: Data from a TReadArchive entry as a stream.
 End Rem
-Type TArchiveStream Extends TStream
+Type TArchiveInputStream Extends TStream
 
 	Field archive:TArchive
 	
@@ -385,6 +386,33 @@ Type TArchiveStream Extends TStream
 
 	Method Eof:Int()
 		Return _eof
+	End Method
+
+End Type
+
+Type TArchiveOutputStream Extends TStream
+
+	Field archive:TWriteArchive
+	
+	Field _eof:Int
+	
+	Method New(archive:TWriteArchive)
+		Self.archive = archive
+	End Method
+
+	Method Write:Long( buf:Byte Ptr,count:Long )
+		Return archive.Data(buf, Size_T(count))
+	End Method
+
+	Method WriteBytes:Long( buf:Byte Ptr,count:Long )
+		Local t:Long=count
+		While count>0
+			Local n:Long=Write( buf,count )
+			If Not n Exit
+			count:-n
+			buf:+n
+		Wend
+		Return t
 	End Method
 
 End Type
@@ -476,6 +504,17 @@ Type TWriteArchive Extends TArchive
 	End Rem
 	Method New()
 		archivePtr = bmx_libarchive_write_archive_new()
+	End Method
+
+	Rem
+	bbdoc: Creates a new instance of #TWriteArchive with the specified format and filters.
+	End Rem
+	Method New(format:EArchiveFormat, filters:EArchiveFilter[])
+		New()
+		SetFormat(format)
+		For Local filter:EArchiveFilter = Eachin filters
+			AddFilter(filter)
+		Next
 	End Method
 
 	Rem
@@ -632,6 +671,14 @@ Type TWriteArchive Extends TArchive
 	End Method
 
 	Rem
+	bbdoc: Returns a writeable #TStream.
+	about: This can be used by any #TStream supported functionality.
+	End Rem
+	Method DataStream:TStream()
+		Return New TArchiveOutputStream(Self)
+	End Method
+
+	Rem
 	bbdoc: Sets a passphrase for the archive.
 	End Rem
 	Method SetPassphrase:Int(passphrase:String)
@@ -758,6 +805,7 @@ Type TArchiveEntry
 	End Rem
 	Method New()
 		entryPtr = bmx_libarchive_archive_entry_new()
+		SetFileType(EArchiveFileType.File)
 	End Method
 
 	Rem
