@@ -60,3 +60,6 @@ Import "zstd/lib/decompress/zstd_decompress_block.c"
 Import "zstd/lib/dictBuilder/cover.c"
 Import "zstd/lib/dictBuilder/divsufsort.c"
 Import "zstd/lib/dictBuilder/zdict.c"
+?x64
+Import "zstd/lib/decompress/huf_decompress_amd64.S"
+?
