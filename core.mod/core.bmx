@@ -194,6 +194,17 @@ Type TReadArchive Extends TArchive
 	End Method
 
 	Rem
+	bbdoc: Creates a new instance of #TReadArchive with the specified format and filters.
+	End Rem
+	Method New(format:EArchiveFormat, filters:EArchiveFilter[])
+		New()
+		SetFormat(format)
+		For Local filter:EArchiveFilter = Eachin filters
+			AddFilter(filter)
+		Next
+	End Method
+
+	Rem
 	bbdoc: Registers a passphrase for the archive.
 	End Rem
 	Method AddPassphrase:Int(passphrase:String)
