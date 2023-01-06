@@ -623,7 +623,7 @@ Type TWriteArchive Extends TArchive
 			entry.SetPermission(420) ' 0644
 			entry.SetSize(size)
 			If ftime Then
-				entry.SetModifiedTime(ftime)
+				entry.SetBirthTime(ftime)
 			End If
 		End If
 
@@ -834,7 +834,7 @@ Type TArchiveEntry
 	End Method
 
 	Rem
-	bbdoc: 
+	bbdoc: Returns the entry access time, in nanoseconds.
 	End Rem
 	Method AccessTimeNano:Long()
 		Return bmx_libarchive_archive_entry_atime_nsec(entryPtr)
@@ -869,14 +869,14 @@ Type TArchiveEntry
 	End Method
 
 	Rem
-	bbdoc: 
+	bbdoc: Returns the entry birth time, in nanoseconds.
 	End Rem
 	Method BirthTimeNano:Long()
 		return bmx_libarchive_archive_entry_birthtime_nsec(entryPtr)
 	End Method
 
 	Rem
-	bbdoc: 
+	bbdoc: Returns #True if the birth time is set.
 	End Rem
 	Method BirthTimeIsSet:Int()
 		return bmx_libarchive_archive_entry_birthtime_is_set(entryPtr)
@@ -912,30 +912,30 @@ Type TArchiveEntry
 	End Method
 
 	Rem
-	bbdoc: Returns the entry creation time, if set.
+	bbdoc: Returns the entry inode change time, if set.
 	End Rem
-	Method CreationTime:Long()
+	Method CTime:Long()
 		return bmx_libarchive_archive_entry_ctime(entryPtr)
 	End Method
 
 	Rem
-	bbdoc: 
+	bbdoc: Returns the entry inode change time, in nanoseconds.
 	End Rem
-	Method CreationTimeNano:Long()
+	Method CTimeNano:Long()
 		return bmx_libarchive_archive_entry_ctime_nsec(entryPtr)
 	End Method
 
 	Rem
-	bbdoc: Returns #True if the creation time is set.
+	bbdoc: Returns #True if the inode change time is set.
 	End Rem
-	Method CreationTimeIsSet:Int()
+	Method CTimeIsSet:Int()
 		return bmx_libarchive_archive_entry_ctime_is_set(entryPtr)
 	End Method
 
 	Rem
-	bbdoc: Unsets the creation time.
+	bbdoc: Unsets the inode change time.
 	End Rem
-	Method UnsetCreationTime()
+	Method UnsetCTime()
 		bmx_libarchive_archive_entry_unset_ctime(entryPtr)
 	End Method
 
