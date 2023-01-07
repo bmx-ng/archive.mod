@@ -108,7 +108,11 @@ Extern
 	Function bmx_libarchive_archive_entry_unset_birthtime(handle:Byte Ptr)
 	Function bmx_libarchive_archive_entry_unset_ctime(handle:Byte Ptr)
 	Function bmx_libarchive_archive_entry_filetype:EArchiveFileType(handle:Byte Ptr)
-
+	Function bmx_libarchive_archive_entry_mtime:Int(handle:Byte Ptr)
+	Function bmx_libarchive_archive_entry_mtime_nsec:Int(handle:Byte Ptr)
+	Function bmx_libarchive_archive_entry_mtime_is_set:Int(handle:Byte Ptr)
+	Function bmx_libarchive_archive_entry_unset_mtime(handle:Byte Ptr)
+		
 	Function archive_error_string:Byte Ptr(handle:Byte Ptr)
 End Extern
 

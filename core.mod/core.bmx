@@ -623,7 +623,7 @@ Type TWriteArchive Extends TArchive
 			entry.SetPermission(420) ' 0644
 			entry.SetSize(size)
 			If ftime Then
-				entry.SetBirthTime(ftime)
+				entry.SetModifiedTime(ftime)
 			End If
 		End If
 
@@ -1021,6 +1021,34 @@ Type TArchiveEntry
 	End Rem
 	Method SetModifiedTime(time:Long, nanoseconds:Long = 0)
 		bmx_libarchive_archive_entry_set_mtime(entryPtr, time, nanoseconds)
+	End Method
+
+	Rem
+	bbdoc: Returns the entry modified time, if set.
+	End Rem
+	Method ModifiedTime:Long()
+		return bmx_libarchive_archive_entry_mtime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns the entry modified time, in nanoseconds.
+	End Rem
+	Method ModifiedTimeNano:Long()
+		return bmx_libarchive_archive_entry_mtime_nsec(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns #True if the modified time is set.
+	End Rem
+	Method ModifiedTimeIsSet:Int()
+		return bmx_libarchive_archive_entry_mtime_is_set(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Unsets the modified time.
+	End Rem
+	Method UnsetModifiedTime()
+		bmx_libarchive_archive_entry_unset_mtime(entryPtr)
 	End Method
 
 	Rem

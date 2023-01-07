@@ -504,3 +504,19 @@ void bmx_libarchive_archive_entry_unset_ctime(struct archive_entry * entry) {
 int bmx_libarchive_archive_entry_filetype(struct archive_entry * entry) {
 	return archive_entry_filetype(entry);
 }
+
+BBInt64 bmx_libarchive_archive_entry_mtime(struct archive_entry * entry) {
+	return archive_entry_mtime(entry);
+}
+
+BBInt64 bmx_libarchive_archive_entry_mtime_nsec(struct archive_entry * entry) {
+	return archive_entry_mtime_nsec(entry);
+}
+
+int bmx_libarchive_archive_entry_mtime_is_set(struct archive_entry * entry) {
+	return archive_entry_mtime_is_set(entry);
+}
+
+void bmx_libarchive_archive_entry_unset_mtime(struct archive_entry * entry) {
+	archive_entry_unset_mtime(entry);
+}
