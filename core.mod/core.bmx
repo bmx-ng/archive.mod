@@ -827,6 +827,13 @@ Type TArchiveEntry
 	End Method
 	
 	Rem
+	bbdoc: Returns the entry access time, as an #SDateTime.
+	End Rem
+	Method AccessDateTime:SDateTime()
+		Return SDateTime.FromEpoch(bmx_libarchive_archive_entry_atime(entryPtr), bmx_libarchive_archive_entry_atime_nsec(entryPtr))
+	End Method
+
+	Rem
 	bbdoc: Returns the entry access time, if set.
 	End Rem
 	Method AccessTime:Long()
@@ -859,6 +866,13 @@ Type TArchiveEntry
 	End Rem
 	Method UnsetAccessTime()
 		bmx_libarchive_archive_entry_unset_atime(entryPtr)
+	End Method
+
+	Rem
+	bbdoc: Returns the entry birth time, as an #SDateTime.
+	End Rem
+	Method BirthDateTime:SDateTime()
+		Return SDateTime.FromEpoch(bmx_libarchive_archive_entry_birthtime(entryPtr), bmx_libarchive_archive_entry_birthtime_nsec(entryPtr))
 	End Method
 
 	Rem
@@ -909,6 +923,13 @@ Type TArchiveEntry
 	End Rem
 	Method Clone:TArchiveEntry()
 		Return TArchiveEntry._create(bmx_libarchive_archive_entry_clone(entryPtr))
+	End Method
+
+	Rem
+	bbdoc: Returns the entry inode change time, as an #SDateTime.
+	End Rem
+	Method CDateTime:SDateTime()
+		Return SDateTime.FromEpoch(bmx_libarchive_archive_entry_ctime(entryPtr), bmx_libarchive_archive_entry_ctime_nsec(entryPtr))
 	End Method
 
 	Rem
@@ -1015,7 +1036,14 @@ Type TArchiveEntry
 	Method SetLink(path:String)
 		bmx_libarchive_archive_entry_set_link(entryPtr, path)
 	End Method
-	
+
+	Rem
+	bbdoc: Returns the entry modified time, as an #SDateTime.
+	End Rem
+	Method ModifiedDateTime:SDateTime()
+		Return SDateTime.FromEpoch(bmx_libarchive_archive_entry_mtime(entryPtr), bmx_libarchive_archive_entry_mtime_nsec(entryPtr))
+	End Method
+
 	Rem
 	bbdoc: Sets the modified time of the entry.
 	End Rem
@@ -1087,7 +1115,7 @@ Type TArchiveEntry
 	End Method
 
 	Rem
-	bbdoc: Returns the uncompressed size of the entry, if available.
+	bbdoc: Returns the uncompressed size, in bytes, of the entry, if available.
 	End Rem
 	Method Size:Long()
 		Return bmx_libarchive_archive_entry_size(entryPtr)
