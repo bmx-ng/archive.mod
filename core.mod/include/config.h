@@ -289,6 +289,10 @@
 #define HAVE_ARC4RANDOM_BUF 1
 #endif
 
+#if defined(__linux__) && (defined(__GLIBC__) && ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 36) || __GLIBC__ > 2))
+#define HAVE_ARC4RANDOM_BUF 1
+#endif
+
 /* Define to 1 if you have the <attr/xattr.h> header file. */
 /* #undef HAVE_ATTR_XATTR_H */
 
