@@ -285,7 +285,7 @@
 /* #undef HAVE_ACL_TAG_T */
 
 /* Define to 1 if you have the `arc4random_buf' function. */
-#ifdef __APPLE__
+#if defined(__APPLE__) || (defined(__linux__) && (defined(__GLIBC__) && ((__GLIBC__ == 2 && __GLIBC_MINOR__ >= 36) || __GLIBC__ > 2)))
 #define HAVE_ARC4RANDOM_BUF 1
 #endif
 
