@@ -5,14 +5,16 @@ Import brl.standardio
 
 Local wa:TWriteArchive = New TWriteArchive
 wa.SetFormat(EArchiveFormat.ZIP)
-wa.SetEncryption(EArchiveEncryptionType.AES256)
-wa.SetPassphrase("abc123")
+wa.SetCompressionLevel(9)
+'wa.SetEncryption(EArchiveEncryptionType.AES256)
+'wa.SetPassphrase("abc123")
 
 wa.Open("data.zip")
 
 wa.AddEntry("testdata.txt", "files/testdata.txt")
 wa.AddEntry("테스트_데이터.txt", "files/테스트_데이터.txt")
-
+Local nowTime:SDatetime = New SDatetime(2023, 7, 21, 11, 23, 0, 0, False)
+wa.AddEntry("", "empty", 0, nowTime.ToEpochSecs(), EArchiveFileType.Dir)
 wa.Close()
 
 
@@ -20,13 +22,14 @@ Local entry:TArchiveEntry = New TArchiveEntry
 
 Local ra:TReadArchive = New TReadArchive
 ra.SetFormat(EArchiveFormat.ZIP)
-ra.AddPassphrase("abc123")
+'ra.AddPassphrase("abc123")
 
 ra.Open("data.zip")
 
 While ra.ReadNextHeader(entry) = ARCHIVE_OK	
 	Print "File : " + entry.Pathname()
 	Print "Size : " + entry.Size()
+	Print "Type : " + entry.FileType().ToString()
 	Local s:String = LoadText(ra.DataStream())
 	Print "String size   : " + s.Length
 	Print "First n chars : " + s[0..17]

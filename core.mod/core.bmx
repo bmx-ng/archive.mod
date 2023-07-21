@@ -622,9 +622,10 @@ Type TWriteArchive Extends TArchive
 		If fileType = EArchiveFileType.File Then
 			entry.SetPermission(420) ' 0644
 			entry.SetSize(size)
-			If ftime Then
-				entry.SetModifiedTime(ftime)
-			End If
+		End If
+
+		If ftime Then
+			entry.SetModifiedTime(ftime)
 		End If
 
 		If Header(entry) <> ARCHIVE_OK Then
