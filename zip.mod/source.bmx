@@ -1,4 +1,4 @@
-' Copyright (c) 2022 Bruce A Henderson
+' Copyright (c) 2023 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -26,7 +26,7 @@ Import Pub.zlib
 
 Import "../../pub.mod/zlib.mod/*.h"
 
-?linux
+?linux or win32
 Import Net.mbedtlsCrypto
 
 Import "../../net.mod/mbedtls.mod/mbedtls/include/*.h"
