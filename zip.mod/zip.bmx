@@ -1,4 +1,4 @@
-' Copyright (c) 2022 Bruce A Henderson
+' Copyright (c) 2023 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -29,7 +29,7 @@ ModuleInfo "CC_OPTS: -DHAVE_ZLIB_H"
 ModuleInfo "CC_OPTS: -DHAVE_CONFIG_H -D_FILE_OFFSET_BITS=64"
 ?win32
 ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC"
-?linux
+?linux or win32
 ModuleInfo "CC_OPTS: -DHAVE_LIBMBEDCRYPTO -DHAVE_MBEDTLS_AES_H -DHAVE_MBEDTLS_PKCS5_H -DHAVE_MBEDTLS_MD_H"
 ?
 
