@@ -1,5 +1,5 @@
 # ################################################################
-# Copyright (c) Yann Collet, Facebook, Inc.
+# Copyright (c) Meta Platforms, Inc. and affiliates.
 # All rights reserved.
 #
 # This source code is licensed under both the BSD-style license (found in the
@@ -212,11 +212,11 @@ $(ZSTD_STATLIB_DIR)/%.o : %.c $(ZSTD_STATLIB_DIR)/%.d | $(ZSTD_STATLIB_DIR)
 
 $(ZSTD_DYNLIB_DIR)/%.o : %.S | $(ZSTD_DYNLIB_DIR)
 	@echo AS $@
-	$(COMPILE.c) $(OUTPUT_OPTION) $<
+	$(COMPILE.S) $(OUTPUT_OPTION) $<
 
 $(ZSTD_STATLIB_DIR)/%.o : %.S | $(ZSTD_STATLIB_DIR)
 	@echo AS $@
-	$(COMPILE.c) $(OUTPUT_OPTION) $<
+	$(COMPILE.S) $(OUTPUT_OPTION) $<
 
 MKDIR ?= mkdir
 $(BUILD_DIR) $(ZSTD_DYNLIB_DIR) $(ZSTD_STATLIB_DIR):
@@ -298,7 +298,7 @@ INSTALL_DATA    ?= $(INSTALL) -m 644
 
 libzstd.pc: libzstd.pc.in
 	@echo creating pkgconfig
-	@sed $(SED_ERE_OPT) \
+	@sed \
 	        -e 's|@PREFIX@|$(PREFIX)|' \
 	        -e 's|@EXEC_PREFIX@|$(PCEXEC_PREFIX)|' \
 	        -e 's|@INCLUDEDIR@|$(PCINCPREFIX)$(PCINCDIR)|' \
