@@ -1,4 +1,4 @@
-' Copyright (c) 2022 Bruce A Henderson
+' Copyright (c) 2022-2023 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,13 @@ End Rem
 Module Archive.Core
 
 
-ModuleInfo "Version: 1.07"
+ModuleInfo "Version: 1.08"
 ModuleInfo "License: BSD"
 ModuleInfo "Copyright: libarchive - 2003-2018 Tim Kientzle"
-ModuleInfo "Copyright: Wrapper - 2013-2022 Bruce A Henderson"
+ModuleInfo "Copyright: Wrapper - 2013-2023 Bruce A Henderson"
 
+ModuleInfo "History: 1.08"
+ModuleInfo "History: Update to libarchive 3.7.0."
 ModuleInfo "History: 1.07"
 ModuleInfo "History: Update to libarchive 3.6.2.2d32907."
 ModuleInfo "History: Added DataStream() to TWriteArchive, returning a writeable TStream."

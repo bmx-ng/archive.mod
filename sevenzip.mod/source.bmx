@@ -25,10 +25,14 @@ SuperStrict
 Import Archive.zlib
 Import Archive.BZip2
 Import Archive.Xz
+Import Archive.Zstd
 
 Import "../../pub.mod/zlib.mod/*.h"
 Import "../bzip2.mod/bzip2/*.h"
 Import "../xz.mod/xz/src/liblzma/api/*.h"
+
+Import "../zstd.mod/zstd/lib/*.h"
+Import "../zstd.mod/zstd/lib/common/*.h"
 
 Import "../core.mod/include/*.h"
 Import "../core.mod/libarchive/libarchive/*.h"
