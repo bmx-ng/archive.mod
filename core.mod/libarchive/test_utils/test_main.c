@@ -327,7 +327,7 @@ my_GetFileInformationByName(const char *path, BY_HANDLE_FILE_INFORMATION *bhfi)
 	int r;
 
 	memset(bhfi, 0, sizeof(*bhfi));
-	h = CreateFile(path, FILE_READ_ATTRIBUTES, 0, NULL,
+	h = CreateFileA(path, FILE_READ_ATTRIBUTES, 0, NULL,
 		OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (h == INVALID_HANDLE_VALUE)
 		return (0);
@@ -1432,7 +1432,7 @@ assertion_file_time(const char *file, int line,
 	/* Note: FILE_FLAG_BACKUP_SEMANTICS applies to open
 	 * a directory file. If not, CreateFile() will fail when
 	 * the pathname is a directory. */
-	h = CreateFile(pathname, FILE_READ_ATTRIBUTES, 0, NULL,
+	h = CreateFileA(pathname, FILE_READ_ATTRIBUTES, 0, NULL,
 	    OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, NULL);
 	if (h == INVALID_HANDLE_VALUE) {
 		failure_start(file, line, "Can't access %s\n", pathname);
@@ -3868,12 +3868,8 @@ main(int argc, char **argv)
 #endif
 	time_t now;
 	struct tm *tmptr;
-#if defined(HAVE_LOCALTIME_R) || defined(HAVE__LOCALTIME64_S)
+#if defined(HAVE_LOCALTIME_R) || defined(HAVE_LOCALTIME_S)
 	struct tm tmbuf;
-#endif
-#if defined(HAVE__LOCALTIME64_S)
-	errno_t	terr;
-	__time64_t tmptime;
 #endif
 	char *refdir_alloc = NULL;
 	const char *progname;
@@ -4109,13 +4105,8 @@ main(int argc, char **argv)
 	 */
 	now = time(NULL);
 	for (i = 0; ; i++) {
-#if defined(HAVE__LOCALTIME64_S)
-		tmptime = now;
-		terr = _localtime64_s(&tmbuf, &tmptime);
-		if (terr)
-			tmptr = NULL;
-		else
-			tmptr = &tmbuf;
+#if defined(HAVE_LOCALTIME_S)
+		tmptr = localtime_s(&tmbuf, &now) ? NULL : &tmbuf;
 #elif defined(HAVE_LOCALTIME_R)
 		tmptr = localtime_r(&now, &tmbuf);
 #else
