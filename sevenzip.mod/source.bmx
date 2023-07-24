@@ -1,4 +1,4 @@
-' Copyright (c) 2022 Bruce A Henderson
+' Copyright (c) 2022-2023 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -22,10 +22,9 @@
 '
 SuperStrict
 
-Import Pub.zlib
+Import Archive.zlib
 Import Archive.BZip2
 Import Archive.Xz
-Import Pub.zlib
 
 Import "../../pub.mod/zlib.mod/*.h"
 Import "../bzip2.mod/bzip2/*.h"
