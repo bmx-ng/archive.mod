@@ -577,6 +577,7 @@ Type TWriteArchive Extends TArchive
 
 	Rem
 	bbdoc: Convience method for adding a file or #TStream to the archive.
+	returns: #False if adding the entry was abandoned, #True otherwise.
 	about: If adding a #TStream, you will also need to provide @pathname, @size and @ftime values.
 	By default, files are added with the permission '0644' (decimal 420).
 	@pathname can also be used to define the path (include sub directories) of the file within the archive - this
@@ -584,7 +585,7 @@ Type TWriteArchive Extends TArchive
 
 	@fileType will 
 	End Rem
-	Method AddEntry(file:Object, pathname:String = Null, size:Long = 0, ftime:Long = 0, fileType:EArchiveFileType = EArchiveFileType.File)
+	Method AddEntry:Int(file:Object, pathname:String = Null, size:Long = 0, ftime:Long = 0, fileType:EArchiveFileType = EArchiveFileType.File, progress:IArchiveWriteProgress = Null)
 		If String(file) Then
 			If Not pathname Then
 				pathname = StripDir(String(file))
@@ -621,6 +622,8 @@ Type TWriteArchive Extends TArchive
 		entry.SetPathname(pathname)
 		entry.SetFileType(fileType)
 
+		Local stopped:Int = False
+
 		If fileType = EArchiveFileType.File Then
 			entry.SetPermission(420) ' 0644
 			entry.SetSize(size)
@@ -635,8 +638,8 @@ Type TWriteArchive Extends TArchive
 		End If
 
 		If fileType = EArchiveFileType.File Then
-			Local StaticArray buf:Byte[8192]
-			Local count:Size_T = size
+			Local StaticArray buf:Byte[16384]
+			Local count:Long = size
 			While count
 				Local nCount:Long = stream.Read(buf, Min(count, buf.Length))
 				If nCount <= 0 Then
@@ -644,6 +647,14 @@ Type TWriteArchive Extends TArchive
 				End If
 				Data(buf, Size_T(nCount))
 				count :- nCount
+
+				If progress And size > 0 Then
+					Local p:Float = Float(size - count) / Float(size)
+					If Not progress.Update(p) Then
+						stopped = True
+						Exit
+					End If
+				End If
 			Wend
 
 			If Not TStream(file) Then
@@ -653,6 +664,8 @@ Type TWriteArchive Extends TArchive
 
 		FinishEntry()
 		entry.Free()
+
+		Return (Not stopped)
 	End Method
 	
 	Rem
@@ -1224,3 +1237,16 @@ End Type
 Type TArchiveException Extends TRuntimeException
 
 End Type
+
+Rem
+bbdoc: An archive entry write progress indicator.
+about: This is used to report the progress of writing an archive entry.
+End Rem
+Interface IArchiveWriteProgress
+	Rem
+	bbdoc: Called when the entry is being written.
+	about: @progress is a value between 0 and 1.
+	Should return #True to continue, or #False to abort.
+	End Rem
+	Method Update:Int(progress:Float)
+End Interface
