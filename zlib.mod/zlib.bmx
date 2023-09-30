@@ -5,12 +5,14 @@ bbdoc: Miscellaneous/ZLib compression
 End Rem
 Module Archive.ZLib
 
-ModuleInfo "Version: 1.08"
+ModuleInfo "Version: 1.09"
 ModuleInfo "Author: Jean-loup Gailly, Mark Adler"
 ModuleInfo "License: zlib/libpng"
 ModuleInfo "Modserver: BRL"
 ModuleInfo "Credit: Adapted for BlitzMax by Mark Sibly"
 
+ModuleInfo "History: 1.09"
+ModuleInfo "History: Updated zlib to 1.3"
 ModuleInfo "History: 1.08"
 ModuleInfo "History: Moved to archive.zlib"
 ModuleInfo "History: Updated zlib to 1.2.13"
@@ -47,12 +49,6 @@ Import "zlib/inftrees.c"
 Import "zlib/trees.c"
 Import "zlib/uncompr.c"
 Import "zlib/zutil.c"
-
-'
-' Build notes:
-'  gzguts.h
-'    Added unistd.h include for emscripten target
-'
 
 Extern
 
