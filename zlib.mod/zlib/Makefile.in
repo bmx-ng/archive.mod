@@ -1,5 +1,5 @@
 # Makefile for zlib
-# Copyright (C) 1995-2017 Jean-loup Gailly, Mark Adler
+# Copyright (C) 1995-2024 Jean-loup Gailly, Mark Adler
 # For conditions of distribution and use, see copyright notice in zlib.h
 
 # To compile and test, type:
@@ -22,13 +22,13 @@ CFLAGS=-O
 
 SFLAGS=-O
 LDFLAGS=
-TEST_LDFLAGS=$(LDFLAGS) -L. libz.a
+TEST_LIBS=-L. libz.a
 LDSHARED=$(CC)
 CPP=$(CC) -E
 
 STATICLIB=libz.a
 SHAREDLIB=libz.so
-SHAREDLIBV=libz.so.1.3
+SHAREDLIBV=libz.so.1.3.1.1
 SHAREDLIBM=libz.so.1
 LIBS=$(STATICLIB) $(SHAREDLIBV)
 
@@ -176,7 +176,7 @@ inftrees.o: $(SRCDIR)inftrees.c
 trees.o: $(SRCDIR)trees.c
 	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)trees.c
 
-zutil.o: $(SRCDIR)zutil.c
+zutil.o: $(SRCDIR)zutil.c $(SRCDIR)gzguts.h
 	$(CC) $(CFLAGS) $(ZINC) -c -o $@ $(SRCDIR)zutil.c
 
 compress.o: $(SRCDIR)compress.c
@@ -238,7 +238,7 @@ trees.lo: $(SRCDIR)trees.c
 	$(CC) $(SFLAGS) $(ZINC) -DPIC -c -o objs/trees.o $(SRCDIR)trees.c
 	-@mv objs/trees.o $@
 
-zutil.lo: $(SRCDIR)zutil.c
+zutil.lo: $(SRCDIR)zutil.c $(SRCDIR)gzguts.h
 	-@mkdir objs 2>/dev/null || test -d objs
 	$(CC) $(SFLAGS) $(ZINC) -DPIC -c -o objs/zutil.o $(SRCDIR)zutil.c
 	-@mv objs/zutil.o $@
@@ -282,10 +282,10 @@ placebo $(SHAREDLIBV): $(PIC_OBJS) libz.a
 	-@rmdir objs
 
 example$(EXE): example.o $(STATICLIB)
-	$(CC) $(CFLAGS) -o $@ example.o $(TEST_LDFLAGS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ example.o $(TEST_LIBS)
 
 minigzip$(EXE): minigzip.o $(STATICLIB)
-	$(CC) $(CFLAGS) -o $@ minigzip.o $(TEST_LDFLAGS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ minigzip.o $(TEST_LIBS)
 
 examplesh$(EXE): example.o $(SHAREDLIBV)
 	$(CC) $(CFLAGS) -o $@ example.o $(LDFLAGS) -L. $(SHAREDLIBV)
@@ -294,10 +294,10 @@ minigzipsh$(EXE): minigzip.o $(SHAREDLIBV)
 	$(CC) $(CFLAGS) -o $@ minigzip.o $(LDFLAGS) -L. $(SHAREDLIBV)
 
 example64$(EXE): example64.o $(STATICLIB)
-	$(CC) $(CFLAGS) -o $@ example64.o $(TEST_LDFLAGS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ example64.o $(TEST_LIBS)
 
 minigzip64$(EXE): minigzip64.o $(STATICLIB)
-	$(CC) $(CFLAGS) -o $@ minigzip64.o $(TEST_LDFLAGS)
+	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ minigzip64.o $(TEST_LIBS)
 
 install-libs: $(LIBS)
 	-@if [ ! -d $(DESTDIR)$(exec_prefix)  ]; then mkdir -p $(DESTDIR)$(exec_prefix); fi
@@ -360,7 +360,7 @@ zconf: $(SRCDIR)zconf.h.in
 	cp -p $(SRCDIR)zconf.h.in zconf.h
 
 minizip-test: static
-	cd contrib/minizip && { CFLAGS="$(CFLAGS)" $(MAKE) test ; cd ../.. ; }
+	cd contrib/minizip && { CC="$(CC)" CFLAGS="$(CFLAGS)" $(MAKE) test ; cd ../.. ; }
 
 minizip-clean:
 	cd contrib/minizip && { $(MAKE) clean ; cd ../.. ; }
@@ -389,7 +389,8 @@ distclean: clean zconf zconf.h.cmakein
 tags:
 	etags $(SRCDIR)*.[ch]
 
-adler32.o zutil.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h
+adler32.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h
+zutil.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)gzguts.h
 gzclose.o gzlib.o gzread.o gzwrite.o: $(SRCDIR)zlib.h zconf.h $(SRCDIR)gzguts.h
 compress.o example.o minigzip.o uncompr.o: $(SRCDIR)zlib.h zconf.h
 crc32.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)crc32.h
@@ -399,7 +400,8 @@ inffast.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)inftrees.h $(SRCDIR
 inftrees.o: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)inftrees.h
 trees.o: $(SRCDIR)deflate.h $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)trees.h
 
-adler32.lo zutil.lo: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h
+adler32.lo: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h
+zutil.lo: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)gzguts.h
 gzclose.lo gzlib.lo gzread.lo gzwrite.lo: $(SRCDIR)zlib.h zconf.h $(SRCDIR)gzguts.h
 compress.lo example.lo minigzip.lo uncompr.lo: $(SRCDIR)zlib.h zconf.h
 crc32.lo: $(SRCDIR)zutil.h $(SRCDIR)zlib.h zconf.h $(SRCDIR)crc32.h
