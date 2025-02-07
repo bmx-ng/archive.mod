@@ -24,7 +24,7 @@ SuperStrict
 
 Import Archive.zlib
 
-Import "../../pub.mod/zlib.mod/*.h"
+Import "../zlib.mod/zlib/*.h"
 
 Import "../core.mod/include/*.h"
 Import "../core.mod/libarchive/libarchive/*.h"

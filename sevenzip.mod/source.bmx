@@ -27,7 +27,7 @@ Import Archive.BZip2
 Import Archive.Xz
 Import Archive.Zstd
 
-Import "../../pub.mod/zlib.mod/*.h"
+Import "../zlib.mod/zlib/*.h"
 Import "../bzip2.mod/bzip2/*.h"
 Import "../xz.mod/xz/src/liblzma/api/*.h"
 
