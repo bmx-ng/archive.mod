@@ -24,7 +24,7 @@ SuperStrict
 
 Import Archive.zlib
 
-Import "../../pub.mod/zlib.mod/*.h"
+Import "../zlib.mod/zlib/*.h"
 
 ?linux or win32
 Import Net.mbedtlsCrypto
