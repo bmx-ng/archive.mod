@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -53,6 +53,7 @@ Import "zstd/lib/compress/zstd_fast.c"
 Import "zstd/lib/compress/zstd_lazy.c"
 Import "zstd/lib/compress/zstd_ldm.c"
 Import "zstd/lib/compress/zstd_opt.c"
+Import "zstd/lib/compress/zstd_preSplit.c"
 Import "zstd/lib/decompress/huf_decompress.c"
 Import "zstd/lib/decompress/zstd_ddict.c"
 Import "zstd/lib/decompress/zstd_decompress.c"

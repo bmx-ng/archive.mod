@@ -23,7 +23,10 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "test.h"
-__FBSDID("$FreeBSD");
+
+#if HAVE_LZMA_H
+#include <lzma.h>
+#endif
 
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #define	close		_close
@@ -31,7 +34,6 @@ __FBSDID("$FreeBSD");
 #endif
 
 #define __LIBARCHIVE_BUILD
-#include <archive_crc32.h>
 
 /*
  * Extract a non-encoded file.
@@ -61,7 +63,7 @@ test_copy(int use_open_fd)
 
 	/* Verify regular file1. */
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
-	assertEqualInt((AE_IFREG | 0666), archive_entry_mode(ae));
+	assertEqualInt((AE_IFREG | 0644), archive_entry_mode(ae));
 	assertEqualString("file1", archive_entry_pathname(ae));
 	assertEqualInt(86401, archive_entry_mtime(ae));
 	assertEqualInt(60, archive_entry_size(ae));
@@ -403,7 +405,7 @@ test_extract_file_zstd_bcj_nobjc(const char *refname)
 		la_ssize_t bytes_read = archive_read_data(a, buff, sizeof(buff));
 		assert(bytes_read >= 0);
 		if (bytes_read == 0) break;
-		computed_crc = crc32(computed_crc, buff, bytes_read);
+		computed_crc = bitcrc32(computed_crc, buff, bytes_read);
 	}
 	assertEqualInt(computed_crc, expected_crc);
 
@@ -765,7 +767,7 @@ test_ppmd(void)
 
 	/* Verify regular file1. */
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
-	assertEqualInt((AE_IFREG | 0666), archive_entry_mode(ae));
+	assertEqualInt((AE_IFREG | 0644), archive_entry_mode(ae));
 	assertEqualString("ppmd_test.txt", archive_entry_pathname(ae));
 	assertEqualInt(1322464589, archive_entry_mtime(ae));
 	assertEqualInt(102400, archive_entry_size(ae));
@@ -930,6 +932,10 @@ DEFINE_TEST(test_read_format_7zip_zstd)
 	if (ARCHIVE_OK != archive_read_support_filter_zstd(a)) {
 		skipping(
 		    "7zip:zstd decoding is not supported on this platform");
+	} else if (ARCHIVE_OK != archive_read_support_filter_xz(a)) {
+		// The directory header entries in the test file uses lzma.
+		skipping(
+		    "7zip:lzma decoding is not supported on this platform");
 	} else {
 		test_extract_all_files_zstd("test_read_format_7zip_zstd.7z");
 	}
@@ -947,6 +953,10 @@ DEFINE_TEST(test_read_format_7zip_zstd_solid)
 	if (ARCHIVE_OK != archive_read_support_filter_zstd(a)) {
 		skipping(
 		    "7zip:zstd decoding is not supported on this platform");
+	} else if (ARCHIVE_OK != archive_read_support_filter_xz(a)) {
+		// The directory header entries in the test file uses lzma.
+		skipping(
+		    "7zip:lzma decoding is not supported on this platform");
 	} else {
 		test_extract_all_files_zstd("test_read_format_7zip_solid_zstd.7z");
 	}
@@ -1051,6 +1061,7 @@ test_arm_filter(const char *refname)
 
 	extract_reference_file(refname);
 
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
 	assert((a = archive_read_new()) != NULL);
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
@@ -1063,7 +1074,7 @@ test_arm_filter(const char *refname)
 	assertEqualString("hw-gnueabihf", archive_entry_pathname(ae));
 	assertEqualInt(sizeof(buff), archive_entry_size(ae));
 	assertEqualInt(sizeof(buff), archive_read_data(a, buff, sizeof(buff)));
-	computed_crc = crc32(computed_crc, buff, sizeof(buff));
+	computed_crc = bitcrc32(computed_crc, buff, sizeof(buff));
 	assertEqualInt(computed_crc, expected_crc);
 
 	assertEqualInt(1, archive_file_count(a));
@@ -1124,6 +1135,7 @@ test_arm64_filter(const char *refname)
 
 	extract_reference_file(refname);
 
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
 	assert((a = archive_read_new()) != NULL);
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
 	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
@@ -1136,7 +1148,7 @@ test_arm64_filter(const char *refname)
 	assertEqualString("hw-arm64", archive_entry_pathname(ae));
 	assertEqualInt(sizeof(buff), archive_entry_size(ae));
 	assertEqualInt(sizeof(buff), archive_read_data(a, buff, sizeof(buff)));
-	computed_crc = crc32(computed_crc, buff, sizeof(buff));
+	computed_crc = bitcrc32(computed_crc, buff, sizeof(buff));
 	assertEqualInt(computed_crc, expected_crc);
 
 	assertEqualInt(1, archive_file_count(a));
@@ -1149,7 +1161,7 @@ test_arm64_filter(const char *refname)
 
 DEFINE_TEST(test_read_format_7zip_lzma2_arm64)
 {
-#ifdef HAVE_LZMA_FILTER_ARM64
+#ifdef LZMA_FILTER_ARM64
 	struct archive *a;
 
 	assert((a = archive_read_new()) != NULL);
@@ -1180,5 +1192,417 @@ DEFINE_TEST(test_read_format_7zip_deflate_arm64)
 		test_arm64_filter("test_read_format_7zip_deflate_arm64.7z");
 	}
 
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_win_attrib)
+{
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_lzma(a)) {
+		skipping(
+		    "7zip:lzma decoding is not supported on this platform");
+		assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+		return;
+	}
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+
+	// This archive has four files and four directories:
+	// * hidden directory
+	// * readonly directory
+	// * regular directory
+	// * system directory
+	// * regular "archive" file
+	// * hidden file
+	// * readonly file
+	// * system file
+	const char *refname = "test_read_format_7zip_win_attrib.7z";
+	extract_reference_file(refname);
+
+	assertEqualIntA(a, ARCHIVE_OK,
+		archive_read_open_filename(a, refname, 10240));
+
+	struct archive_entry *ae;
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("hidden_dir/", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFDIR | 0755), archive_entry_mode(ae));
+	assertEqualString("hidden", archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("readonly_dir/", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFDIR | 0555), archive_entry_mode(ae));
+	assertEqualString("rdonly", archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("regular_dir/", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFDIR | 0755), archive_entry_mode(ae));
+	assertEqualString(NULL, archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("system_dir/", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFDIR | 0755), archive_entry_mode(ae));
+	assertEqualString("system", archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("archive_file.txt", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFREG | 0644), archive_entry_mode(ae));
+	assertEqualString(NULL, archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("hidden_file.txt", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFREG | 0644), archive_entry_mode(ae));
+	assertEqualString("hidden", archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("readonly_file.txt", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFREG | 0444), archive_entry_mode(ae));
+	assertEqualString("rdonly", archive_entry_fflags_text(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("system_file.txt", archive_entry_pathname(ae));
+	assertEqualInt((AE_IFREG | 0644), archive_entry_mode(ae));
+	assertEqualString("system", archive_entry_fflags_text(ae));
+
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_sfx_pe)
+{
+	/*
+	 * This is a regular 7z SFX PE file
+	 * created by 7z tool v22.01 on Windows 64-bit
+	 */
+	struct archive *a;
+	struct archive_entry *ae;
+	int bs = 10240;
+	char buff[32];
+	const char reffile[] = "test_read_format_7zip_sfx_pe.exe";
+	const char test_txt[] = "123";
+	int size = sizeof(test_txt) - 1;
+
+	extract_reference_file(reffile);
+	assert((a = archive_read_new()) != NULL);
+	assertA(0 == archive_read_support_filter_all(a));
+	assertA(0 == archive_read_support_format_all(a));
+	assertA(0 == archive_read_open_filename(a, reffile, bs));
+
+	assertA(0 == archive_read_next_header(a, &ae));
+	assertEqualString("test.txt.txt", archive_entry_pathname(ae));
+
+	assertA(size == archive_read_data(a, buff, size));
+	assertEqualMem(buff, test_txt, size);
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_sfx_modified_pe)
+{
+	/*
+	 * This test simulates a modified 7z SFX PE
+	 * the compressed data in the SFX file is still stored as PE overlay
+	 * but the decompressor code is replaced
+	 */
+	struct archive *a;
+	struct archive_entry *ae;
+	int bs = 10240;
+	char buff[32];
+	const char reffile[] = "test_read_format_7zip_sfx_modified_pe.exe";
+	const char test_txt[] = "123";
+	int size = sizeof(test_txt) - 1;
+
+	extract_reference_file(reffile);
+	assert((a = archive_read_new()) != NULL);
+	assertA(0 == archive_read_support_filter_all(a));
+	assertA(0 == archive_read_support_format_all(a));
+	assertA(0 == archive_read_open_filename(a, reffile, bs));
+
+	assertA(0 == archive_read_next_header(a, &ae));
+	assertEqualString("test.txt.txt", archive_entry_pathname(ae));
+
+	assertA(size == archive_read_data(a, buff, size));
+	assertEqualMem(buff, test_txt, size);
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_sfx_elf)
+{
+	/*
+	 * This is a regular 7z SFX ELF file
+	 * created by 7z tool v16.02 on Ubuntu
+	 */
+	struct archive *a;
+	struct archive_entry *ae;
+	int bs = 10240;
+	char buff[32];
+	const char reffile[] = "test_read_format_7zip_sfx_elf.elf";
+	const char test_txt[] = "123";
+	int size = sizeof(test_txt) - 1;
+
+	extract_reference_file(reffile);
+	assert((a = archive_read_new()) != NULL);
+	assertA(0 == archive_read_support_filter_all(a));
+	assertA(0 == archive_read_support_format_all(a));
+	assertA(0 == archive_read_open_filename(a, reffile, bs));
+
+	assertA(0 == archive_read_next_header(a, &ae));
+	assertEqualString("test.txt.txt", archive_entry_pathname(ae));
+
+	assertA(size == archive_read_data(a, buff, size));
+	assertEqualMem(buff, test_txt, size);
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_close(a));
+  assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_extract_second)
+{
+	struct archive *a;
+	char buffer[256];
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_lzma(a)) {
+		skipping(
+		    "7zip:lzma decoding is not supported on this platform");
+		assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+		return;
+	}
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+
+	/*
+	 * The test archive has two files: first.txt which is a 65,536 file (the
+	 * size of the uncompressed buffer), and second.txt which has contents
+	 * we will validate. This test ensures we can skip first.txt and still
+	 * be able to read the contents of second.txt
+	 */
+	const char *refname = "test_read_format_7zip_extract_second.7z";
+	extract_reference_file(refname);
+
+	assertEqualIntA(a, ARCHIVE_OK,
+		archive_read_open_filename(a, refname, 10240));
+
+	struct archive_entry *ae;
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("first.txt", archive_entry_pathname(ae));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualString("second.txt", archive_entry_pathname(ae));
+
+	assertEqualInt(23, archive_read_data(a, buffer, sizeof(buffer)));
+	assertEqualMem("This is from second.txt", buffer, 23);
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+#ifdef LZMA_FILTER_RISCV
+static void
+test_riscv_filter(const char *refname)
+{
+	struct archive *a;
+	struct archive_entry *ae;
+	char buff[8488];
+	uint32_t computed_crc = 0;
+	uint32_t expected_crc = 0xf7ed24e7;
+
+	assert((a = archive_read_new()) != NULL);
+
+	extract_reference_file(refname);
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+	assert((a = archive_read_new()) != NULL);
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+
+	assertEqualIntA(a, ARCHIVE_OK,
+		archive_read_open_filename(a, refname, 10240));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualInt((AE_IFREG | 0775), archive_entry_mode(ae));
+	assertEqualString("hw-riscv64", archive_entry_pathname(ae));
+	assertEqualInt(sizeof(buff), archive_entry_size(ae));
+	assertEqualInt(sizeof(buff), archive_read_data(a, buff, sizeof(buff)));
+
+	computed_crc = bitcrc32(computed_crc, buff, sizeof(buff));
+	assertEqualInt(computed_crc, expected_crc);
+
+	assertEqualInt(1, archive_file_count(a));
+
+	assertEqualIntA(a, ARCHIVE_EOF, archive_read_next_header(a, &ae));
+
+	assertEqualInt(ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+#endif
+
+DEFINE_TEST(test_read_format_7zip_lzma2_riscv)
+{
+#ifdef LZMA_FILTER_RISCV
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_lzma(a)) {
+		skipping("7zip:lzma decoding is not supported on this platform");
+	} else {
+		test_riscv_filter("test_read_format_7zip_lzma2_riscv.7z");
+	}
+#else
+	skipping("This version of liblzma does not support LZMA_FILTER_RISCV");
+#endif
+}
+
+static void
+test_sparc_filter(const char *refname)
+{
+	struct archive *a;
+	struct archive_entry *ae;
+	size_t expected_entry_size = 1053016;
+	char *buff = malloc(expected_entry_size);
+	uint32_t computed_crc = 0;
+	uint32_t expected_crc = 0x6b5b364d;
+
+	assert((a = archive_read_new()) != NULL);
+
+	extract_reference_file(refname);
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+	assert((a = archive_read_new()) != NULL);
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+
+	assertEqualIntA(a, ARCHIVE_OK,
+		archive_read_open_filename(a, refname, 10240));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualInt((AE_IFREG | 0775), archive_entry_mode(ae));
+	assertEqualString("hw-sparc64", archive_entry_pathname(ae));
+	assertEqualInt(expected_entry_size, archive_entry_size(ae));
+	assertEqualInt(expected_entry_size, archive_read_data(a, buff, expected_entry_size));
+
+	computed_crc = bitcrc32(computed_crc, buff, expected_entry_size);
+	assertEqualInt(computed_crc, expected_crc);
+
+	assertEqualInt(1, archive_file_count(a));
+
+	assertEqualIntA(a, ARCHIVE_EOF, archive_read_next_header(a, &ae));
+
+	assertEqualInt(ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+
+	free(buff);
+}
+
+DEFINE_TEST(test_read_format_7zip_lzma2_sparc)
+{
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_lzma(a)) {
+		skipping(
+		    "7zip:lzma decoding is not supported on this platform");
+	} else {
+		test_sparc_filter("test_read_format_7zip_lzma2_sparc.7z");
+	}
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_zstd_sparc)
+{
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_zstd(a)) {
+		skipping(
+		    "7zip:zstd decoding is not supported on this platform");
+	} else {
+		test_sparc_filter("test_read_format_7zip_zstd_sparc.7z");
+	}
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+static void
+test_powerpc_filter(const char *refname)
+{
+	struct archive *a;
+	struct archive_entry *ae;
+	size_t expected_entry_size = 68340;
+	char *buff = malloc(expected_entry_size);
+	uint32_t computed_crc = 0;
+	uint32_t expected_crc = 0x71fb03c9;
+
+	assert((a = archive_read_new()) != NULL);
+
+	extract_reference_file(refname);
+
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+	assert((a = archive_read_new()) != NULL);
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+
+	assertEqualIntA(a, ARCHIVE_OK,
+		archive_read_open_filename(a, refname, 10240));
+
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_next_header(a, &ae));
+	assertEqualInt((AE_IFREG | 0775), archive_entry_mode(ae));
+	assertEqualString("hw-powerpc", archive_entry_pathname(ae));
+	assertEqualInt(expected_entry_size, archive_entry_size(ae));
+	assertEqualInt(expected_entry_size, archive_read_data(a, buff, expected_entry_size));
+
+	computed_crc = bitcrc32(computed_crc, buff, expected_entry_size);
+	assertEqualInt(computed_crc, expected_crc);
+
+	assertEqualInt(1, archive_file_count(a));
+
+	assertEqualIntA(a, ARCHIVE_EOF, archive_read_next_header(a, &ae));
+
+	assertEqualInt(ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+
+	free(buff);
+}
+
+DEFINE_TEST(test_read_format_7zip_deflate_powerpc)
+{
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_gzip(a)) {
+		skipping(
+		    "7zip:deflate decoding is not supported on this platform");
+	} else {
+		test_powerpc_filter("test_read_format_7zip_deflate_powerpc.7z");
+	}
+  
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}
+
+DEFINE_TEST(test_read_format_7zip_lzma2_powerpc)
+{
+	struct archive *a;
+
+	assert((a = archive_read_new()) != NULL);
+
+	if (ARCHIVE_OK != archive_read_support_filter_gzip(a)) {
+		skipping(
+		    "7zip:deflate decoding is not supported on this platform");
+	} else {
+		test_powerpc_filter("test_read_format_7zip_lzma2_powerpc.7z");
+	}
+  
 	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
 }

@@ -1,31 +1,15 @@
 /*-
+ * SPDX-License-Identifier: BSD-2-Clause
+ *
  * Copyright (c) 2003-2008 Tim Kientzle
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) ``AS IS'' AND ANY EXPRESS OR
- * IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
- * OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
- * IN NO EVENT SHALL THE AUTHOR(S) BE LIABLE FOR ANY DIRECT, INDIRECT,
- * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
- * NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
- * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include "bsdtar_platform.h"
-__FBSDID("$FreeBSD: src/usr.bin/tar/bsdtar.c,v 1.93 2008/11/08 04:43:24 kientzle Exp $");
 
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
+#endif
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
@@ -43,6 +27,9 @@ __FBSDID("$FreeBSD: src/usr.bin/tar/bsdtar.c,v 1.93 2008/11/08 04:43:24 kientzle
 #endif
 #ifdef HAVE_LANGINFO_H
 #include <langinfo.h>
+#endif
+#ifdef HAVE_LIMITS_H
+#include <limits.h>
 #endif
 #ifdef HAVE_LOCALE_H
 #include <locale.h>
@@ -114,11 +101,11 @@ need_report(void)
 }
 #endif
 
-static void		 long_help(void) __LA_DEAD;
+static __LA_NORETURN void		 long_help(void);
 static void		 only_mode(struct bsdtar *, const char *opt,
 			     const char *valid);
-static void		 set_mode(struct bsdtar *, char opt);
-static void		 version(void) __LA_DEAD;
+static void		 set_mode(struct bsdtar *, int opt);
+static __LA_NORETURN void		 version(void);
 
 /* A basic set of security flags to request from libarchive. */
 #define	SECURITY					\
@@ -152,12 +139,14 @@ main(int argc, char **argv)
 {
 	struct bsdtar		*bsdtar, bsdtar_storage;
 	int			 opt, t;
-	char			 compression, compression2;
+	int			 compression, compression2;
 	const char		*compression_name, *compression2_name;
 	const char		*compress_program;
-	char			*tptr;
+	char			*tptr, *uptr;
 	char			 possible_help_request;
 	char			 buff[16];
+	long			 l;
+	time_t			now;
 
 	/*
 	 * Use a pointer for consistency, but stack-allocated storage
@@ -172,6 +161,7 @@ main(int argc, char **argv)
 	compression = compression2 = '\0';
 	compression_name = compression2_name = NULL;
 	compress_program = NULL;
+	time(&now);
 
 #if defined(HAVE_SIGACTION)
 	{ /* Set up signal handling. */
@@ -302,16 +292,15 @@ main(int argc, char **argv)
 			/* libarchive doesn't need this; just ignore it. */
 			break;
 		case 'b': /* SUSv2 */
-			errno = 0;
 			tptr = NULL;
-			t = (int)strtol(bsdtar->argument, &tptr, 10);
-			if (errno || t <= 0 || t > 8192 ||
+			l = strtol(bsdtar->argument, &tptr, 10);
+			if (l <= 0 || l > 8192L ||
 			    *(bsdtar->argument) == '\0' || tptr == NULL ||
 			    *tptr != '\0') {
 				lafe_errc(1, 0, "Invalid or out of range "
 				    "(1..8192) argument to -b");
 			}
-			bsdtar->bytes_per_block = 512 * t;
+			bsdtar->bytes_per_block = 512 * (int)l;
 			/* Explicit -b forces last block size. */
 			bsdtar->bytes_in_last_block = bsdtar->bytes_per_block;
 			break;
@@ -347,7 +336,7 @@ main(int argc, char **argv)
 			if (archive_match_exclude_pattern(
 			    bsdtar->matching, bsdtar->argument) != ARCHIVE_OK)
 				lafe_errc(1, 0,
-				    "Couldn't exclude %s\n", bsdtar->argument);
+				    "Couldn't exclude %s", bsdtar->argument);
 			break;
 		case OPTION_EXCLUDE_VCS: /* GNU tar */
 			for(t=0; vcs_files[t]; t++) {
@@ -355,7 +344,7 @@ main(int argc, char **argv)
 				    bsdtar->matching,
 				    vcs_files[t]) != ARCHIVE_OK)
 					lafe_errc(1, 0, "Couldn't "
-					    "exclude %s\n", vcs_files[t]);
+					    "exclude %s", vcs_files[t]);
 			}
 			break;
 		case OPTION_FFLAGS:
@@ -370,17 +359,45 @@ main(int argc, char **argv)
 			bsdtar->filename = bsdtar->argument;
 			break;
 		case OPTION_GID: /* cpio */
-			errno = 0;
 			tptr = NULL;
-			t = (int)strtol(bsdtar->argument, &tptr, 10);
-			if (errno || t < 0 || *(bsdtar->argument) == '\0' ||
+			l = strtol(bsdtar->argument, &tptr, 10);
+			if (l < 0 || l >= INT_MAX || *(bsdtar->argument) == '\0' ||
 			    tptr == NULL || *tptr != '\0') {
 				lafe_errc(1, 0, "Invalid argument to --gid");
 			}
-			bsdtar->gid = t;
+			bsdtar->gid = (int)l;
 			break;
 		case OPTION_GNAME: /* cpio */
 			bsdtar->gname = bsdtar->argument;
+			break;
+		case OPTION_GROUP: /* GNU tar */
+			tptr = NULL;
+
+			uptr = strchr(bsdtar->argument, ':');
+			if (uptr != NULL) {
+				if (uptr[1] == '\0') {
+					lafe_errc(1, 0, "Invalid argument to --group (missing id after :)");
+				}
+				uptr[0] = 0;
+				uptr++;
+				l = strtol(uptr, &tptr, 10);
+				if (l < 0 || l >= INT_MAX || *uptr == '\0' ||
+				    tptr == NULL || *tptr != '\0') {
+					lafe_errc(1, 0, "Invalid argument to --group (%s is not a number)", uptr);
+				} else {
+					bsdtar->gid = (int)l;
+				}
+				bsdtar->gname = bsdtar->argument;
+			} else {
+				l = strtol(bsdtar->argument, &tptr, 10);
+				if (l < 0 || l >= INT_MAX || *(bsdtar->argument) == '\0' ||
+				    tptr == NULL || *tptr != '\0') {
+					bsdtar->gname = bsdtar->argument;
+				} else {
+					bsdtar->gid = (int)l;
+					bsdtar->gname = "";
+				}
+			}
 			break;
 		case OPTION_GRZIP:
 			if (compression != '\0')
@@ -400,8 +417,7 @@ main(int argc, char **argv)
 			break;
 		case OPTION_HELP: /* GNU tar, others */
 			long_help();
-			exit(0);
-			break;
+			/* NOTREACHED*/
 		case OPTION_HFS_COMPRESSION: /* Mac OS X v10.6 or later */
 			bsdtar->extract_flags |=
 			    ARCHIVE_EXTRACT_HFS_COMPRESSION_FORCED;
@@ -626,7 +642,51 @@ main(int argc, char **argv)
 			    ARCHIVE_READDISK_NO_TRAVERSE_MOUNTS;
 			break;
 		case OPTION_OPTIONS:
+			if (bsdtar->option_options != NULL) {
+				lafe_warnc(0,
+				    "Ignoring previous option '%s', separate multiple options with commas",
+				    bsdtar->option_options);
+			}
 			bsdtar->option_options = bsdtar->argument;
+			break;
+		case OPTION_OWNER: /* GNU tar */
+			tptr = NULL;
+
+			uptr = strchr(bsdtar->argument, ':');
+			if (uptr != NULL) {
+				if (uptr[1] == 0) {
+					lafe_errc(1, 0, "Invalid argument to --owner (missing id after :)");
+				}
+				uptr[0] = 0;
+				uptr++;
+				l = strtol(uptr, &tptr, 10);
+				if (l < 0 || l >= INT_MAX || *uptr == '\0' ||
+				    tptr == NULL || *tptr != '\0') {
+					lafe_errc(1, 0, "Invalid argument to --owner (%s is not a number)", uptr);
+				} else {
+					bsdtar->uid = (int)l;
+				}
+				bsdtar->uname = bsdtar->argument;
+			} else {
+				l = strtol(bsdtar->argument, &tptr, 10);
+				if (l < 0 || l >= INT_MAX || *(bsdtar->argument) == '\0' ||
+				    tptr == NULL || *tptr != '\0') {
+					bsdtar->uname = bsdtar->argument;
+				} else {
+					bsdtar->uid = (int)l;
+					bsdtar->uname = "";
+				}
+			}
+			break;
+		case OPTION_MTIME: /* GNU tar */
+			bsdtar->has_mtime = 1;
+			bsdtar->mtime = archive_parse_date(now, bsdtar->argument);
+			if (bsdtar->mtime == (time_t)-1) {
+				lafe_errc(1, 0, "Invalid argument to --mtime (bad date string)");
+			}
+			break;
+		case OPTION_CLAMP_MTIME: /* GNU tar */
+			bsdtar->clamp_mtime = 1;
 			break;
 #if 0
 		/*
@@ -670,7 +730,7 @@ main(int argc, char **argv)
 			bsdtar->extract_flags |= ARCHIVE_EXTRACT_SPARSE;
 			break;
 		case 's': /* NetBSD pax-as-tar */
-#if defined(HAVE_REGEX_H) || defined(HAVE_PCREPOSIX_H)
+#if defined(HAVE_REGEX_H) || defined(HAVE_PCREPOSIX_H) || defined(HAVE_PCRE2POSIX_H)
 			add_substitution(bsdtar, bsdtar->argument);
 #else
 			lafe_warnc(0,
@@ -685,17 +745,18 @@ main(int argc, char **argv)
 			bsdtar->extract_flags |= ARCHIVE_EXTRACT_OWNER;
 			break;
 		case OPTION_STRIP_COMPONENTS: /* GNU tar 1.15 */
-			errno = 0;
 			tptr = NULL;
-			t = (int)strtol(bsdtar->argument, &tptr, 10);
-			if (errno || t < 0 || *(bsdtar->argument) == '\0' ||
+			l = strtol(bsdtar->argument, &tptr, 10);
+			if (l < 0 || l > 100000L || *(bsdtar->argument) == '\0' ||
 			    tptr == NULL || *tptr != '\0') {
 				lafe_errc(1, 0, "Invalid argument to "
 				    "--strip-components");
 			}
-			bsdtar->strip_components = t;
+			bsdtar->strip_components = (int)l;
 			break;
 		case 'T': /* GNU tar */
+			if (bsdtar->names_from_file)
+				lafe_errc(1, 0, "Multiple --files-from/-T options are not supported");
 			bsdtar->names_from_file = bsdtar->argument;
 			break;
 		case 't': /* SUSv2 */
@@ -713,14 +774,13 @@ main(int argc, char **argv)
 			set_mode(bsdtar, opt);
 			break;
 		case OPTION_UID: /* cpio */
-			errno = 0;
 			tptr = NULL;
-			t = (int)strtol(bsdtar->argument, &tptr, 10);
-			if (errno || t < 0 || *(bsdtar->argument) == '\0' ||
+			l = strtol(bsdtar->argument, &tptr, 10);
+			if (l < 0 || l >= INT_MAX || *(bsdtar->argument) == '\0' ||
 			    tptr == NULL || *tptr != '\0') {
 				lafe_errc(1, 0, "Invalid argument to --uid");
 			}
-			bsdtar->uid = t;
+			bsdtar->uid = (int)l;
 			break;
 		case OPTION_UNAME: /* cpio */
 			bsdtar->uname = bsdtar->argument;
@@ -738,7 +798,7 @@ main(int argc, char **argv)
 			break;
 		case OPTION_VERSION: /* GNU convention */
 			version();
-			break;
+			/* NOTREACHED */
 #if 0
 		/*
 		 * The -W longopt feature is handled inside of
@@ -804,7 +864,6 @@ main(int argc, char **argv)
 	/* If no "real" mode was specified, treat -h as --help. */
 	if ((bsdtar->mode == '\0') && possible_help_request) {
 		long_help();
-		exit(0);
 	}
 
 	/* Otherwise, a mode is required. */
@@ -893,7 +952,7 @@ main(int argc, char **argv)
 		switch (compression) {
 		case 'J': case 'j': case 'y': case 'Z': case 'z':
 			strcpy(buff, "-?");
-			buff[1] = compression;
+			buff[1] = (char)compression;
 			break;
 		default:
 			strcpy(buff, "--");
@@ -916,6 +975,10 @@ main(int argc, char **argv)
 		buff[1] = bsdtar->symlink_mode;
 		only_mode(bsdtar, buff, "cru");
 	}
+
+	if (!bsdtar->has_mtime && bsdtar->clamp_mtime)
+		lafe_errc(1, 0,
+		    "--clamp-mtime is not valid without --mtime <date>");
 
 	/*
 	 * When creating an archive from a directory tree, the directory
@@ -950,7 +1013,7 @@ main(int argc, char **argv)
 	}
 
 	archive_match_free(bsdtar->matching);
-#if defined(HAVE_REGEX_H) || defined(HAVE_PCREPOSIX_H)
+#if defined(HAVE_REGEX_H) || defined(HAVE_PCREPOSIX_H) || defined(HAVE_PCRE2POSIX_H)
 	cleanup_substitution(bsdtar);
 #endif
 	cset_free(bsdtar->cset);
@@ -963,7 +1026,7 @@ main(int argc, char **argv)
 }
 
 static void
-set_mode(struct bsdtar *bsdtar, char opt)
+set_mode(struct bsdtar *bsdtar, int opt)
 {
 	if (bsdtar->mode != '\0' && bsdtar->mode != opt)
 		lafe_errc(1, 0,
@@ -1021,6 +1084,8 @@ static const char *long_help_msg =
 	"  -z, -j, -J, --lzma  Compress archive with gzip/bzip2/xz/lzma\n"
 	"  --format {ustar|pax|cpio|shar}  Select archive format\n"
 	"  --exclude <pattern>  Skip files that match pattern\n"
+	"  --mtime <date>  Set modification times for added files\n"
+	"  --clamp-mtime   Only set modification times for files newer than --mtime\n"
 	"  -C <dir>  Change to <dir> before processing remaining files\n"
 	"  @<archive>  Add entries from <archive> to output\n"
 	"List: %p -t [options] [<patterns>]\n"

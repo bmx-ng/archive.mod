@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -24,10 +24,12 @@ SuperStrict
 
 Module Archive.Lz4
 
-ModuleInfo "Version: 1.01"
+ModuleInfo "Version: 1.02"
 ModuleInfo "License: BSD"
-ModuleInfo "Copyright: Wrapper - 2022-2023 Bruce A Henderson"
+ModuleInfo "Copyright: Wrapper - 2022-2025 Bruce A Henderson"
 
+ModuleInfo "History: 1.02"
+ModuleInfo "History: Update to lz4 1.10.0"
 ModuleInfo "History: 1.01"
 ModuleInfo "History: Update to lz4 1.9.4"
 ModuleInfo "History: 1.00"

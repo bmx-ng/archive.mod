@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "test.h"
-__FBSDID("$FreeBSD: head/lib/libarchive/test/test_acl_freebsd.c 189427 2009-03-06 04:21:23Z kientzle $");
 
 #if ARCHIVE_ACL_POSIX1E
 #include <sys/acl.h>
@@ -275,7 +274,8 @@ compare_acls(
 	for (i = 0; i < n; ++i) {
 		failure(" ACL entry missing from file: "
 		    "type=%#010x,permset=%#010x,tag=%d,qual=%d,name=``%s''\n",
-		    myacls[marker[i]].type, myacls[marker[i]].permset,
+		    (unsigned int)myacls[marker[i]].type,
+		    (unsigned int)myacls[marker[i]].permset,
 		    myacls[marker[i]].tag, myacls[marker[i]].qual,
 		    myacls[marker[i]].name);
 		assert(0); /* Record this as a failure. */

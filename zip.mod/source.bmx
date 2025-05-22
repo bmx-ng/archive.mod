@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -23,8 +23,13 @@
 SuperStrict
 
 Import Archive.zlib
+Import Archive.xz
+Import Archive.zstd
+Import Archive.bzip2
 
 Import "../zlib.mod/zlib/*.h"
+Import "../xz.mod/xz/src/liblzma/api/*.h"
+Import "../zstd.mod/zstd/lib/*.h"
 
 ?linux or win32
 Import Net.mbedtlsCrypto

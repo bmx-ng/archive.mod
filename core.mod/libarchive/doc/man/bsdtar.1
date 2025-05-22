@@ -1,4 +1,4 @@
-.TH TAR 1 "December 1, 2022" ""
+.TH TAR 1 "April 23, 2024" ""
 .SH NAME
 .ad l
 \fB\%tar\fP
@@ -30,19 +30,22 @@
 \fB\%tar\fP
 creates and manipulates streaming archive files.
 This implementation can extract from tar, pax, cpio, zip, jar, ar, xar,
-rpm, 7-zip, and ISO 9660 cdrom images and can create tar, pax, cpio, ar, zip,
-7-zip, and shar archives.
+rar, rpm, 7-zip, and ISO 9660 cdrom images and can create tar, pax,
+cpio, ar, zip, 7-zip, and shar archives.
 .PP
 The first synopsis form shows a
 ``bundled''
 option word.
 This usage is provided for compatibility with historical implementations.
-See COMPATIBILITY below for details.
+See
+.B COMPATIBILITY
+below for details.
 .PP
 The other synopsis forms show the preferred usage.
 The first option to
 \fB\%tar\fP
 is a mode indicator from the following list:
+.PP
 .RS 5
 .TP
 \fB\-c\fP
@@ -114,22 +117,28 @@ all operating modes.
 The specified archive is opened and the entries
 in it will be appended to the current archive.
 As a simple example,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-c\fP \fB\-f\fP \fI-\fP \fInewfile\fP \fB@\fP \fIoriginal.tar\fP
 .RE
+.PP
 writes a new archive to standard output containing a file
 \fInewfile\fP
 and all of the entries from
 \fIoriginal.tar\fP.
 In contrast,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-c\fP \fB\-f\fP \fI-\fP \fInewfile\fP \fIoriginal.tar\fP
 .RE
+.PP
 creates a new archive with only two entries.
 Similarly,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-czf\fP \fI-\fP \fB\-Fl\fP format \fBpax\fP \fB@\fP \fI-\fP
 .RE
+.PP
 reads an archive from standard input (whose format will be determined
 automatically) and converts it into a gzip-compressed
 pax-format archive on stdout.
@@ -142,29 +151,39 @@ can be used to convert archives from one format to another.
 Use the archive suffix to decide a set of the format and
 the compressions.
 As a simple example,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-a\fP \fB\-cf\fP \fIarchive.tgz\fP source.c source.h
 .RE
+.PP
 creates a new archive with restricted pax format and gzip compression,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-a\fP \fB\-cf\fP \fIarchive.tar.bz2.uu\fP source.c source.h
 .RE
+.PP
 creates a new archive with restricted pax format and bzip2 compression
 and uuencode compression,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-a\fP \fB\-cf\fP \fIarchive.zip\fP source.c source.h
 .RE
+.PP
 creates a new archive with zip format,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-a\fP \fB\-jcf\fP \fIarchive.tgz\fP source.c source.h
 .RE
+.PP
 ignores the
 ``-j''
 option, and creates a new archive with restricted pax format
 and gzip compression,
+.PP
 .RS 4
 \fB\%tar\fP \fB\-a\fP \fB\-jcf\fP \fIarchive.xxx\fP source.c source.h
 .RE
+.PP
 if it is unknown suffix or no suffix, creates a new archive with
 restricted pax format and bzip2 compression.
 .TP
@@ -204,6 +223,12 @@ but before extracting entries from the archive.
 to the current directory after processing any
 \fB\-C\fP
 options and before extracting any files.
+.TP
+\fB\-Fl\fP clamp-mtime
+(use with
+\fB\-Fl\fP mtime)
+Only set the modification time if the file is newer than the date specified in
+\fB\-Fl\fP mtime.
 .TP
 \fB\-Fl\fP clear-nochange-fflags
 (x mode only)
@@ -290,6 +315,16 @@ On create, this sets the group name that will be stored
 in the archive;
 the name will not be verified against the system group database.
 .TP
+\fB\-Fl\fP group \fIname\fP [: \fIgid\fP]
+Use the provided group, if
+\fIgid\fP
+is not provided,
+\fIname\fP
+can be either a group name or numeric id.
+See the
+\fB\-Fl\fP gname
+option for details.
+.TP
 \fB\-H\fP
 (c and r modes only)
 Symbolic links named on the command line will be followed; the
@@ -328,9 +363,11 @@ The
 \fB\-Fl\fP include
 option is especially useful when filtering archives.
 For example, the command
+.PP
 .RS 4
 \fB\%tar\fP \fB\-c\fP \fB\-f\fP \fInew.tar\fP \fB\-Fl\fP include='*foo*' \fB@\fP \fIold.tgz\fP
 .RE
+.PP
 creates a new archive
 \fInew.tar\fP
 containing only the entries from
@@ -440,6 +477,13 @@ This is the reverse of
 and the default behavior in c, r, and u modes or if
 \fB\%tar\fP
 is run in x mode as root.
+Currently supported only for pax formats
+Po including pax restricted, the default tar format for
+\fB\%bsdtar\fP Pc
+.TP
+\fB\-Fl\fP mtime \fIdate\fP
+(c, r, u modes only)
+Set the modification times of added files to the specified date.
 .TP
 \fB\-n\fP, \fB\-Fl\fP norecurse, \fB\-Fl\fP no-recursion
 Do not operate recursively on the content of directories.
@@ -507,7 +551,7 @@ and the default behavior if
 is run as non-root in x mode.
 .TP
 \fB\-Fl\fP no-mac-metadata
-(x mode only)
+(c, r, u and x mode only)
 Mac OS X specific.
 Do not archive or extract ACLs and extended file attributes
 using
@@ -628,6 +672,7 @@ keywords and values.
 These are passed to the modules that handle particular
 formats to control how those formats will behave.
 Each option has one of the following forms:
+.PP
 .RS 5
 .TP
 \fIkey=value\fP
@@ -655,6 +700,7 @@ and for extract and list modes in
 \fBarchive_read_set_options\fP(3).
 .PP
 Examples of supported options:
+.PP
 .RS 5
 .TP
 \fBiso9660:joliet\fP
@@ -714,31 +760,132 @@ A decimal integer from 4 to 7 specifying the lz4 compression block size
 Use the previous block of the block being compressed for
 a compression dictionary to improve compression ratio.
 .TP
-\fBzstd:compression-level\fP
-A decimal integer specifying the zstd compression level. Supported values depend
+\fBzstd:compression-level\fP=\fIN\fP
+A decimal integer specifying the zstd compression level.
+Supported values depend
 on the library version, common values are from 1 to 22.
 .TP
-\fBzstd:threads\fP
-Specify the number of worker threads to use.
-Setting threads to a special value 0 makes
-\fBzstd\fP(1)
-use as many threads as there are CPU cores on the system.
+\fBzstd:threads\fP=\fIN\fP
+Specify the number of worker threads to use, or 0 to use as many
+threads as there are CPU cores in the system.
 .TP
 \fBzstd:frame-per-file\fP
 Start a new compression frame at the beginning of each file in the
 archive.
 .TP
-\fBzstd:min-frame-size\fP=\fIN\fP
+\fBzstd:min-frame-in\fP=\fIN\fP
 In combination with
 \fBzstd:frame-per-file\fP,
-do not start a new compression frame unless the current frame is at least
+do not start a new compression frame unless the uncompressed size of
+the current frame is at least
 \fIN\fP
 bytes.
+The number may be followed by
+.RS 4
+k /
+.RE
+.RS 4
+kB,
+.RE
+.RS 4
+M /
+.RE
+.RS 4
+MB,
+.RE
+or
+.RS 4
+G /
+.RE
+.RS 4
+GB
+.RE
+to indicate kilobytes, megabytes or gigabytes respectively.
 .TP
-\fBzstd:max-frame-size\fP=\fIN\fP
-Start a new compression frame as soon as the current frame exceeds
+\fBzstd:min-frame-out\fP=\fIN\fP, \fBzstd:min-frame-size\fP=\fIN\fP
+In combination with
+\fBzstd:frame-per-file\fP,
+do not start a new compression frame unless the compressed size of the
+current frame is at least
 \fIN\fP
 bytes.
+The number may be followed by
+.RS 4
+k /
+.RE
+.RS 4
+kB,
+.RE
+.RS 4
+M /
+.RE
+.RS 4
+MB,
+.RE
+or
+.RS 4
+G /
+.RE
+.RS 4
+GB
+.RE
+to indicate kilobytes, megabytes or gigabytes respectively.
+.TP
+\fBzstd:max-frame-in\fP=\fIN\fP, \fBzstd:max-frame-size\fP=\fIN\fP
+Start a new compression frame as soon as possible after the
+uncompressed size of the current frame exceeds
+\fIN\fP
+bytes.
+The number may be followed by
+.RS 4
+k /
+.RE
+.RS 4
+kB,
+.RE
+.RS 4
+M /
+.RE
+.RS 4
+MB,
+.RE
+or
+.RS 4
+G /
+.RE
+.RS 4
+GB
+.RE
+to indicate kilobytes, megabytes or gigabytes respectively.
+Values less than 1,024 will be rejected.
+.TP
+\fBzstd:max-frame-out\fP=\fIN\fP
+Start a new compression frame as soon as possible after the compressed
+size of the current frame exceeds
+\fIN\fP
+bytes.
+The number may be followed by
+.RS 4
+k /
+.RE
+.RS 4
+kB,
+.RE
+.RS 4
+M /
+.RE
+.RS 4
+MB,
+.RE
+or
+.RS 4
+G /
+.RE
+.RS 4
+GB
+.RE
+to indicate kilobytes, megabytes or gigabytes respectively.
+Values less than 1,024 will be rejected.
 .TP
 \fBlzop:compression-level\fP
 A decimal integer from 1 to 9 specifying the lzop compression level.
@@ -802,6 +949,7 @@ This option is comparable to the
 \fB\-i\fP, \fB\-Fl\fP ignore-zeros
 option of GNU tar.
 .RE
+.PP
 If a provided option is not supported by any module, that
 is a fatal error.
 .TP
@@ -876,7 +1024,7 @@ This works similar to the conv=sparse option of dd.
 Modify file or archive member names according to
 \fIpattern\fP.
 The pattern has the format
-\fI/old/new/\fP [ghHprRsS]
+\fI/old/new/\fP [bghHprRsS]
 where
 \fIold\fP
 is a basic regular expression,
@@ -898,6 +1046,9 @@ of symbolic links.
 The optional trailing p specifies that after a successful substitution
 the original path name and the new path name should be printed to
 standard error.
+The optional trailing b specifies that the substitution should be
+matched from the beginning of the string rather than from right after the
+position at which the previous matching substitution ended.
 Optional trailing H, R, or S characters suppress substitutions
 for hardlink targets, regular filenames, or symlink targets,
 respectively.
@@ -985,7 +1136,9 @@ This flag also causes
 \fB\%tar\fP
 to remove intervening directory symlinks instead of
 reporting an error.
-See the SECURITY section below for more details.
+See the
+.B SECURITY
+section below for more details.
 .TP
 \fB\-Fl\fP uid \fIid\fP
 Use the provided user id number and ignore the user
@@ -1012,6 +1165,16 @@ the name is not verified against the system user database.
 Pipe the input (in x or t mode) or the output (in c mode) through
 \fIprogram\fP
 instead of using the builtin compression support.
+.TP
+\fB\-Fl\fP owner \fIname\fP [: \fIuid\fP]
+Use the provided user, if
+\fIuid\fP
+is not provided,
+\fIname\fP
+can be either an username or numeric id.
+See the
+\fB\-Fl\fP uname
+option for details.
 .TP
 \fB\-v\fP, \fB\-Fl\fP verbose
 Produce verbose output.
@@ -1133,23 +1296,27 @@ that contains two files
 \fIsource.c\fP
 and
 \fIsource.h\fP:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-czf\fP \fIfile.tar.gz\fP \fIsource.c\fP \fIsource.h\fP
 .RE
 .PP
 To view a detailed table of contents for this
 archive:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-tvf\fP \fIfile.tar.gz\fP
 .RE
 .PP
 To extract all entries from the archive on
 the default tape drive:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-x\fP
 .RE
 .PP
 To examine the contents of an ISO 9660 cdrom image:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-tf\fP \fIimage.iso\fP
 .RE
@@ -1157,10 +1324,13 @@ To examine the contents of an ISO 9660 cdrom image:
 To move file hierarchies, invoke
 \fB\%tar\fP
 as
+.PP
 .RS 4
 \fB\%tar\fP \fB\-cf\fP \fI-\fP \fB\-C\fP \fIsrcdir\fP \&. | \fB\%tar\fP \fB\-xpf\fP \fI-\fP \fB\-C\fP \fIdestdir\fP
 .RE
+.PP
 or more traditionally
+.PP
 .RS 4
 cd srcdir \&; \fB\%tar\fP \fB\-cf\fP \fI-\fP \&. | (cd destdir \&; \fB\%tar\fP \fB\-xpf\fP \fI-\fP)
 .RE
@@ -1171,9 +1341,11 @@ can also include directory change instructions of the form
 and archive inclusions of the form
 \fB@\fP \fIarchive-file\fP.
 For example, the command line
+.PP
 .RS 4
 \fB\%tar\fP \fB\-c\fP \fB\-f\fP \fInew.tar\fP \fIfoo1\fP \fB@\fP \fIold.tgz\fP \fB-C\fP \fI/tmp\fP \fIfoo2\fP
 .RE
+.PP
 will create a new archive
 \fInew.tar\fP.
 \fB\%tar\fP
@@ -1222,13 +1394,17 @@ For example, you can generate mtree output which only contains
 and
 \fBuid\fP
 keywords:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-cf\fP \fIfile.tar\fP \fB\-Fl\fP format=mtree \fB\-Fl\fP options='!all,type,time,uid' \fIdir\fP
 .RE
+.PP
 or you can set the compression level used by gzip or xz compression:
+.PP
 .RS 4
 \fB\%tar\fP \fB\-czf\fP \fIfile.tar\fP \fB\-Fl\fP options='compression-level=9'.
 .RE
+.PP
 For more details, see the explanation of the
 \fB\%archive_read_set_options\fP()
 and
@@ -1247,9 +1423,11 @@ Arguments follow as separate words.
 The order of the arguments must match the order
 of the corresponding characters in the bundled command word.
 For example,
+.PP
 .RS 4
 \fB\%tar\fP \fBtbf\fP 32 \fIfile.tar\fP
 .RE
+.PP
 specifies three flags
 \fBt\fP,
 \fBb\fP,
@@ -1348,12 +1526,15 @@ is specified,
 \fB\%tar\fP
 will refuse to extract the entry.
 .RE
+.PP
 To protect yourself, you should be wary of any archives that
 come from untrusted sources.
 You should examine the contents of an archive with
+.PP
 .RS 4
 \fB\%tar\fP \fB\-tf\fP \fIfilename\fP
 .RE
+.PP
 before extraction.
 You should use the
 \fB\-k\fP
@@ -1407,7 +1588,7 @@ command appeared in Seventh Edition Unix, which was released in January, 1979.
 There have been numerous other implementations,
 many of which extended the file format.
 John Gilmore's
-\fB\%pdtar\fP
+.B pdtar
 public-domain implementation (circa November, 1987)
 was quite influential, and formed the basis of GNU tar.
 GNU tar was included as the standard system tar
@@ -1461,10 +1642,13 @@ although they still extract it correctly.
 The compression and decompression is implemented internally, so
 there may be insignificant differences between the compressed output
 generated by
+.PP
 .RS 4
 \fB\%tar\fP \fB\-czf\fP \fI-\fP file
 .RE
+.PP
 and that generated by
+.PP
 .RS 4
 \fB\%tar\fP \fB\-cf\fP \fI-\fP file | \fB\%gzip\fP
 .RE
@@ -1511,5 +1695,5 @@ There is not yet any support for multi-volume archives.
 Converting between dissimilar archive formats (such as tar and cpio) using the
 \fB@\fP \fI-\fP
 convention can cause hard link information to be lost.
-(This is a consequence of the incompatible ways that different archive
-formats store hardlink information.)
+This is a consequence of the incompatible ways that different archive
+formats store hardlink information.

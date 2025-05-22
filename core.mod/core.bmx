@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -28,11 +28,13 @@ End Rem
 Module Archive.Core
 
 
-ModuleInfo "Version: 1.08"
+ModuleInfo "Version: 1.09"
 ModuleInfo "License: BSD"
 ModuleInfo "Copyright: libarchive - 2003-2018 Tim Kientzle"
-ModuleInfo "Copyright: Wrapper - 2013-2023 Bruce A Henderson"
+ModuleInfo "Copyright: Wrapper - 2013-2025 Bruce A Henderson"
 
+ModuleInfo "History: 1.09"
+ModuleInfo "History: Update to libarchive 3.8.0."
 ModuleInfo "History: 1.08"
 ModuleInfo "History: Update to libarchive 3.7.0."
 ModuleInfo "History: 1.07"
@@ -770,11 +772,26 @@ Type TWriteArchive Extends TArchive
 | Type | Notes                                                                                                                                                                                                                                    |
 |------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 7zip | The value is one of "store", "deflate", "bzip2", "lzma1", "lzma2" or "ppmd" to indicate how the following entries should be compressed.<br>Note that this setting is ignored for directories, symbolic links, and other special entries. |
-| zip  | The value is either "store" or "deflate" to indicate how the following entries should be compressed.<br>Note that this setting is ignored for directories, symbolic links, and other special entries.                                    |
+| zip  | The value is either "store", "deflate", "bzip2", "lzma", "xz" or "zstd" to indicate how the following entries should be compressed.<br>Note that this setting is ignored for directories, symbolic links, and other special entries.     |
 
 	End Rem
 	Method SetCompressionType:Int(compressionType:String)
 		Return bmx_libarchive_archive_write_set_option(archivePtr, "compression", compressionType, Null)
+	End Method
+
+	Rem
+	bbdoc: Sets the number of threads to use for compression.
+	about:
+
+| Type | Notes                                                                                                                                                                                                                                    |
+|------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 7zip | The value is the number of threads for multi-threaded compression (for compressors like zstd that support it). If set to 0, an attempt will be made to discover the number of CPU cores.                                                 |
+| zip  | The value is the number of threads to use for compression. It is supported only for "xz" or "zstd" compression and ignored for any other. A threads value of 0 is a special one requesting to detect and use as many threads as the number of active physical CPU cores. |
+| zstd | The value is the number of threads for multi-threaded zstd compression. If set to 0, zstd will attempt to detect and use the number of active physical CPU cores.                                                                        |
+
+	End Rem
+	Method SetThreads:Int(threads:Int)
+		Return bmx_libarchive_archive_write_set_option(archivePtr, "threads", String(threads), Null)
 	End Method
 
 	Rem

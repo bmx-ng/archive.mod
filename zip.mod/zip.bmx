@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -32,6 +32,7 @@ ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC"
 ?linux or win32
 ModuleInfo "CC_OPTS: -DHAVE_LIBMBEDCRYPTO -DHAVE_MBEDTLS_AES_H -DHAVE_MBEDTLS_PKCS5_H -DHAVE_MBEDTLS_MD_H"
 ?
+ModuleInfo "CC_OPTS: -DHAVE_LZMA_H -DHAVE_BZLIB_H -DHAVE_ZSTD_H -DHAVE_ZSTD_compressStream"
 
 Import Archive.Core
 Import "common.bmx"

@@ -25,7 +25,6 @@
 
 
 #include "test.h"
-__FBSDID("$FreeBSD$");
 
 static void
 test_basic(const char *compression_type)
@@ -567,4 +566,10 @@ DEFINE_TEST(test_write_format_7zip_basic_ppmd)
 {
 	/* Test that making a 7-Zip archive file with PPMd compression. */
 	test_basic("ppmd");
+}
+
+DEFINE_TEST(test_write_format_7zip_basic_zstd)
+{
+	/* Test that making a 7-Zip archive file with zstandard compression. */
+	test_basic("zstd");
 }

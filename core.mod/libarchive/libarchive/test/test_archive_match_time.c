@@ -24,10 +24,8 @@
  */
 
 #include "test.h"
-__FBSDID("$FreeBSD$");
 
-#define __LIBARCHIVE_BUILD 1
-#include "archive_getdate.h"
+#define parse_date archive_parse_date
 
 static void
 test_newer_time(void)
@@ -103,27 +101,27 @@ test_newer_time_str(void)
 
 	/* Test1: Allow newer time. */
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:1 UTC");
+	t = parse_date(now, "1980/2/1 0:0:1 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 1);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its mtime should be excluded");
@@ -144,20 +142,20 @@ test_newer_time_str(void)
 	    "1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:1 UTC");
+	t = parse_date(now, "1980/2/1 0:0:1 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
@@ -191,27 +189,27 @@ test_newer_time_str_w(void)
 
 	/* Test1: Allow newer time. */
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:1 UTC");
+	t = parse_date(now, "1980/2/1 0:0:1 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 1);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its mtime should be excluded");
@@ -232,20 +230,20 @@ test_newer_time_str_w(void)
 	    L"1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/2/1 0:0:1 UTC");
+	t = parse_date(now, "1980/2/1 0:0:1 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
@@ -317,14 +315,13 @@ test_newer_mtime_than_file_mbs(void)
 static void
 test_newer_ctime_than_file_mbs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -374,6 +371,7 @@ test_newer_ctime_than_file_mbs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void
@@ -436,14 +434,13 @@ test_newer_mtime_than_file_wcs(void)
 static void
 test_newer_ctime_than_file_wcs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -494,6 +491,7 @@ test_newer_ctime_than_file_wcs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void
@@ -570,37 +568,37 @@ test_older_time_str(void)
 	    ARCHIVE_MATCH_OLDER, "1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its mtime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
@@ -613,20 +611,20 @@ test_older_time_str(void)
 	    "1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
@@ -660,37 +658,37 @@ test_older_time_str_w(void)
 	    ARCHIVE_MATCH_OLDER, L"1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its mtime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
 	assertEqualInt(1, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Its ctime should be excluded");
 	assertEqualInt(1, archive_match_time_excluded(m, ae));
@@ -703,20 +701,20 @@ test_older_time_str_w(void)
 	    L"1980/2/1 0:0:0 UTC"));
 
 	archive_entry_copy_pathname(ae, "file1");
-	t = __archive_get_date(now, "1980/2/1 0:0:0 UTC");
+	t = parse_date(now, "1980/2/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
-	t = __archive_get_date(now, "1980/1/1 0:0:0 UTC");
+	t = parse_date(now, "1980/1/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should not be excluded");
 	assertEqualInt(0, archive_match_time_excluded(m, ae));
 	assertEqualInt(0, archive_match_excluded(m, ae));
 
-	t = __archive_get_date(now, "1980/3/1 0:0:0 UTC");
+	t = parse_date(now, "1980/3/1 0:0:0 UTC");
 	archive_entry_set_mtime(ae, t, 0);
 	archive_entry_set_ctime(ae, t, 0);
 	failure("Both Its mtime and ctime should be excluded");
@@ -788,14 +786,13 @@ test_older_mtime_than_file_mbs(void)
 static void
 test_older_ctime_than_file_mbs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -846,6 +843,7 @@ test_older_ctime_than_file_mbs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void
@@ -908,14 +906,13 @@ test_older_mtime_than_file_wcs(void)
 static void
 test_older_ctime_than_file_wcs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -966,6 +963,7 @@ test_older_ctime_than_file_wcs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void
@@ -1089,14 +1087,13 @@ test_mtime_between_files_wcs(void)
 static void
 test_ctime_between_files_mbs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -1148,19 +1145,19 @@ test_ctime_between_files_mbs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void
 test_ctime_between_files_wcs(void)
 {
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	skipping("Can't set ctime on Windows");
+	return;
+#else
 	struct archive *a;
 	struct archive_entry *ae;
 	struct archive *m;
-
-#if defined(_WIN32) && !defined(__CYGWIN__)
-        skipping("Can't set ctime on Windows");
-        return;
-#endif
 
 	if (!assert((m = archive_match_new()) != NULL))
 		return;
@@ -1212,6 +1209,7 @@ test_ctime_between_files_wcs(void)
 	archive_read_free(a);
 	archive_entry_free(ae);
 	archive_match_free(m);
+#endif
 }
 
 static void

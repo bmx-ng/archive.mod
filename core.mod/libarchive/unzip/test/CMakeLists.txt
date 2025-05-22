@@ -11,6 +11,7 @@ IF(ENABLE_UNZIP AND ENABLE_TEST)
     test.h
     test_0.c
     test_basic.c
+    test_doubledash.c
     test_glob.c
     test_singlefile.c
     test_C.c
@@ -23,9 +24,11 @@ IF(ENABLE_UNZIP AND ENABLE_TEST)
     test_q.c
     test_t.c
     test_t_bad.c
+    test_version.c
     test_x.c
     test_Z1.c
     test_P_encryption.c
+    test_I.c
   )
 
   #
@@ -61,7 +64,9 @@ IF(ENABLE_UNZIP AND ENABLE_TEST)
       COMMAND bsdunzip_test -vv
                            -p $<TARGET_FILE:bsdunzip>
                            -r ${CMAKE_CURRENT_SOURCE_DIR}
+                           -s
                            ${_testname})
+    SET_TESTS_PROPERTIES(bsdunzip_${_testname} PROPERTIES SKIP_RETURN_CODE 2)
   ENDMACRO (DEFINE_TEST _testname)
 
   INCLUDE(${CMAKE_CURRENT_BINARY_DIR}/list.h)
