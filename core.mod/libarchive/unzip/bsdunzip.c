@@ -4,43 +4,12 @@
  * Copyright (c) 2009, 2010 Joerg Sonnenberger <joerg@NetBSD.org>
  * Copyright (c) 2007-2008 Dag-Erling Smørgrav
  * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer
- *    in this position and unchanged.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
- * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
- * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
- * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
- * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
- * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
- * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
- * SUCH DAMAGE.
- *
- * $FreeBSD$
- *
- * This file would be much shorter if we didn't care about command-line
- * compatibility with Info-ZIP's UnZip, which requires us to duplicate
- * parts of libarchive in order to gain more detailed control of its
- * behaviour for the purpose of implementing the -n, -o, -L and -a
- * options.
  */
 
 #include "bsdunzip_platform.h"
 
-#ifdef HAVE_SYS_QUEUE_H
-#include <sys/queue.h>
-#endif
+#include "la_queue.h"
+#include "la_getline.h"
 #ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
 #endif
@@ -57,6 +26,9 @@
 #ifdef HAVE_FNMATCH_H
 #include <fnmatch.h>
 #endif
+#ifdef HAVE_LOCALE_H
+#include <locale.h>
+#endif
 #ifdef HAVE_STDARG_H
 #include <stdarg.h>
 #endif
@@ -70,9 +42,17 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#if ((!defined(HAVE_UTIMENSAT) && defined(HAVE_LUTIMES)) || \
+    (!defined(HAVE_FUTIMENS) && defined(HAVE_FUTIMES)))
+#ifdef HAVE_SYS_TIME_H
+#include <sys/time.h>
+#endif
+#endif
+#ifdef HAVE_GETOPT_OPTRESET
+#include <getopt.h>
+#endif
 
-#include <archive.h>
-#include <archive_entry.h>
+#include "bsdunzip.h"
 #include "passphrase.h"
 #include "err.h"
 
@@ -82,18 +62,20 @@ static int		 C_opt;		/* match case-insensitively */
 static int		 c_opt;		/* extract to stdout */
 static const char	*d_arg;		/* directory */
 static int		 f_opt;		/* update existing files only */
+static const char	*O_arg;		/* encoding */
 static int		 j_opt;		/* junk directories */
 static int		 L_opt;		/* lowercase names */
 static int		 n_opt;		/* never overwrite */
 static int		 o_opt;		/* always overwrite */
 static int		 p_opt;		/* extract to stdout, quiet */
-static char		*P_arg;		/* passphrase */
+static const char	*P_arg;		/* passphrase */
 static int		 q_opt;		/* quiet */
 static int		 t_opt;		/* test */
 static int		 u_opt;		/* update */
 static int		 v_opt;		/* verbose/list */
 static const char	*y_str = "";	/* 4 digit year */
 static int		 Z1_opt;	/* zipinfo mode list files only */
+static int		 version_opt;	/* version string */
 
 /* debug flag */
 static int		 unzip_debug;
@@ -103,6 +85,11 @@ static int		 zipinfo_mode;
 
 /* running on tty? */
 static int		 tty;
+
+/* processing exclude list */
+static int		 unzip_exclude_mode = 0;
+
+int bsdunzip_optind;
 
 /* convenience macro */
 /* XXX should differentiate between ARCHIVE_{WARN,FAIL,RETRY} */
@@ -124,7 +111,7 @@ static int noeol;
 static char *passphrase_buf;
 
 /* fatal error message + errno */
-static void
+static void __LA_NORETURN
 error(const char *fmt, ...)
 {
 	va_list ap;
@@ -141,7 +128,7 @@ error(const char *fmt, ...)
 }
 
 /* fatal error message, no errno */
-static void
+static void __LA_NORETURN
 errorx(const char *fmt, ...)
 {
 	va_list ap;
@@ -246,7 +233,7 @@ pathdup(const char *path)
 	}
 	if (L_opt) {
 		for (i = 0; i < len; ++i)
-			str[i] = tolower((unsigned char)path[i]);
+			str[i] = (char)tolower((unsigned char)path[i]);
 	} else {
 		memcpy(str, path, len);
 	}
@@ -369,7 +356,7 @@ make_dir(const char *path, int mode)
 		 */
 		(void)unlink(path);
 	}
-	if (mkdir(path, mode) != 0 && errno != EEXIST)
+	if (mkdir(path, (mode_t)mode) != 0 && errno != EEXIST)
 		error("mkdir('%s')", path);
 }
 
@@ -466,13 +453,8 @@ handle_existing_file(char **path)
 		fprintf(stderr,
 		    "replace %s? [y]es, [n]o, [A]ll, [N]one, [r]ename: ",
 		    *path);
-		if (fgets(buf, sizeof(buf), stdin) == NULL) {
-			clearerr(stdin);
-			printf("NULL\n(EOF or read error, "
-			    "treating as \"[N]one\"...)\n");
-			n_opt = 1;
-			return -1;
-		}
+		if (fgets(buf, sizeof(buf), stdin) == NULL)
+			goto stdin_err;
 		switch (*buf) {
 		case 'A':
 			o_opt = 1;
@@ -494,6 +476,8 @@ handle_existing_file(char **path)
 			*path = NULL;
 			alen = 0;
 			len = getline(path, &alen, stdin);
+			if (len < 1)
+				goto stdin_err;
 			if ((*path)[len - 1] == '\n')
 				(*path)[len - 1] = '\0';
 			return 0;
@@ -501,6 +485,12 @@ handle_existing_file(char **path)
 			break;
 		}
 	}
+stdin_err:
+	clearerr(stdin);
+	printf("NULL\n(EOF or read error, "
+		"treating as \"[N]one\"...)\n");
+	n_opt = 1;
+	return -1;
 }
 
 /*
@@ -628,9 +618,15 @@ extract_file(struct archive *a, struct archive_entry *e, char **path)
 	int mode;
 	struct timespec mtime;
 	struct stat sb;
-	struct timespec ts[2];
 	int fd, check, text;
 	const char *linkname;
+#if defined(HAVE_UTIMENSAT) || defined(HAVE_FUTIMENS)
+	struct timespec ts[2];
+#endif
+#if ((!defined(HAVE_UTIMENSAT) && defined(HAVE_LUTIMES)) || \
+    (!defined(HAVE_FUTIMENS) && defined(HAVE_FUTIMES)))
+	struct timeval times[2];
+#endif
 
 	mode = archive_entry_mode(e) & 0777;
 	if (mode == 0)
@@ -684,9 +680,18 @@ recheck:
 			return;
 	}
 
+#if defined(HAVE_UTIMENSAT) || defined(HAVE_FUTIMENS)
 	ts[0].tv_sec = 0;
 	ts[0].tv_nsec = UTIME_NOW;
 	ts[1] = mtime;
+#endif
+#if ((!defined(HAVE_UTIMENSAT) && defined(HAVE_LUTIMES)) || \
+    (!defined(HAVE_FUTIMENS) && defined(HAVE_FUTIMES)))
+	times[0].tv_sec = 0;
+	times[0].tv_usec = -1;
+	times[1].tv_sec = mtime.tv_sec;
+	times[1].tv_usec = mtime.tv_nsec / 1000;
+#endif
 
 	/* process symlinks */
 	linkname = archive_entry_symlink(e);
@@ -694,11 +699,19 @@ recheck:
 		if (symlink(linkname, *path) != 0)
 			error("symlink('%s')", *path);
 		info(" extracting: %s -> %s\n", *path, linkname);
-		if (lchmod(*path, mode) != 0)
+#ifdef HAVE_LCHMOD
+		if (lchmod(*path, (mode_t)mode) != 0)
 			warning("Cannot set mode for '%s'", *path);
+#endif
 		/* set access and modification time */
+#if defined(HAVE_UTIMENSAT)
 		if (utimensat(AT_FDCWD, *path, ts, AT_SYMLINK_NOFOLLOW) != 0)
 			warning("utimensat('%s')", *path);
+#elif defined(HAVE_LUTIMES)
+		gettimeofday(&times[0], NULL);
+		if (lutimes(*path, times) != 0)
+			warning("lutimes('%s')", *path);
+#endif
 		return;
 	}
 
@@ -716,8 +729,14 @@ recheck:
 	info("\n");
 
 	/* set access and modification time */
+#if defined(HAVE_FUTIMENS)
 	if (futimens(fd, ts) != 0)
 		error("futimens('%s')", *path);
+#elif defined(HAVE_FUTIMES)
+	gettimeofday(&times[0], NULL);
+	if (futimes(fd, times) != 0)
+		error("futimes('%s')", *path);
+#endif
 	if (close(fd) != 0)
 		error("close('%s')", *path);
 }
@@ -857,6 +876,7 @@ list(struct archive *a, struct archive_entry *e)
 	char buf[20];
 	time_t mtime;
 	struct tm *tm;
+	const char *pathname;
 
 	mtime = archive_entry_mtime(e);
 	tm = localtime(&mtime);
@@ -865,22 +885,25 @@ list(struct archive *a, struct archive_entry *e)
 	else
 		strftime(buf, sizeof(buf), "%m-%d-%g %R", tm);
 
+	pathname = archive_entry_pathname(e);
+	if (!pathname)
+		pathname = "";
 	if (!zipinfo_mode) {
 		if (v_opt == 1) {
 			printf(" %8ju  %s   %s\n",
 			    (uintmax_t)archive_entry_size(e),
-			    buf, archive_entry_pathname(e));
+			    buf, pathname);
 		} else if (v_opt == 2) {
 			printf("%8ju  Stored  %7ju   0%%  %s  %08x  %s\n",
 			    (uintmax_t)archive_entry_size(e),
 			    (uintmax_t)archive_entry_size(e),
 			    buf,
 			    0U,
-			    archive_entry_pathname(e));
+			    pathname);
 		}
 	} else {
 		if (Z1_opt)
-			printf("%s\n",archive_entry_pathname(e));
+			printf("%s\n", pathname);
 	}
 	ac(archive_read_data_skip(a));
 }
@@ -960,6 +983,9 @@ unzip(const char *fn)
 		error("archive_read_new failed");
 
 	ac(archive_read_support_format_zip(a));
+
+	if (O_arg)
+		ac(archive_read_set_format_option(a, "zip", "hdrcharset", O_arg));
 
 	if (P_arg)
 		archive_read_add_passphrase(a, P_arg);
@@ -1043,22 +1069,36 @@ usage(void)
 {
 
 	fprintf(stderr,
-"Usage: unzip [-aCcfjLlnopqtuvyZ1] [-d dir] [-x pattern] [-P password] zipfile\n"
+"Usage: unzip [-aCcfjLlnopqtuvyZ1] [{-O|-I} encoding] [-d dir] [-x pattern] [-P password] zipfile\n"
 "             [member ...]\n");
 	exit(EXIT_FAILURE);
+}
+
+static void
+version(void)
+{
+        printf("bsdunzip %s - %s \n",
+            BSDUNZIP_VERSION_STRING,
+            archive_version_details());
+        exit(0);
 }
 
 static int
 getopts(int argc, char *argv[])
 {
+	struct bsdunzip *bsdunzip, bsdunzip_storage;
 	int opt;
+	bsdunzip_optind = 1;
 
-	optreset = optind = 1;
-	while ((opt = getopt(argc, argv, "aCcd:fjLlnopP:qtuvx:yZ1")) != -1)
+	bsdunzip = &bsdunzip_storage;
+	memset(bsdunzip, 0, sizeof(*bsdunzip));
+
+        bsdunzip->argv = argv;
+        bsdunzip->argc = argc;
+
+	while ((opt = bsdunzip_getopt(bsdunzip)) != -1) {
+		unzip_exclude_mode = 0;
 		switch (opt) {
-		case '1':
-			Z1_opt = 1;
-			break;
 		case 'a':
 			a_opt = 1;
 			break;
@@ -1069,10 +1109,14 @@ getopts(int argc, char *argv[])
 			c_opt = 1;
 			break;
 		case 'd':
-			d_arg = optarg;
+			d_arg = bsdunzip->argument;
 			break;
 		case 'f':
 			f_opt = 1;
+			break;
+		case 'I':
+		case 'O':
+			O_arg = bsdunzip->argument;
 			break;
 		case 'j':
 			j_opt = 1;
@@ -1095,7 +1139,7 @@ getopts(int argc, char *argv[])
 			p_opt = 1;
 			break;
 		case 'P':
-			P_arg = optarg;
+			P_arg = bsdunzip->argument;
 			break;
 		case 'q':
 			q_opt = 1;
@@ -1110,19 +1154,31 @@ getopts(int argc, char *argv[])
 			v_opt = 2;
 			break;
 		case 'x':
-			add_pattern(&exclude, optarg);
+			add_pattern(&exclude, bsdunzip->argument);
+			unzip_exclude_mode = 1;
 			break;
 		case 'y':
 			y_str = "  ";
 			break;
 		case 'Z':
 			zipinfo_mode = 1;
+			if (bsdunzip->argument != NULL &&
+			    strcmp(bsdunzip->argument, "1") == 0) {
+				Z1_opt = 1;
+			}
+			break;
+		case OPTION_VERSION:
+			version_opt = 1;
+			break;
+		case OPTION_NONE:
 			break;
 		default:
 			usage();
 		}
-
-	return (optind);
+		if (opt == OPTION_NONE)
+			break;
+	}
+	return (bsdunzip_optind);
 }
 
 int
@@ -1130,6 +1186,13 @@ main(int argc, char *argv[])
 {
 	const char *zipfile;
 	int nopts;
+
+	lafe_setprogname(*argv, "bsdunzip");
+
+#if HAVE_SETLOCALE
+	if (setlocale(LC_ALL, "") == NULL)
+		lafe_warnc(0, "Failed to set default locale");
+#endif
 
 	if (isatty(STDOUT_FILENO))
 		tty = 1;
@@ -1151,6 +1214,9 @@ main(int argc, char *argv[])
 	 */
 	nopts = getopts(argc, argv);
 
+	if (version_opt == 1)
+		version();
+
 	/*
 	 * When more of the zipinfo mode options are implemented, this
 	 * will need to change.
@@ -1167,11 +1233,25 @@ main(int argc, char *argv[])
 	if (strcmp(zipfile, "-") == 0)
 		zipfile = NULL; /* STDIN */
 
+	unzip_exclude_mode = 0;
+
 	while (nopts < argc && *argv[nopts] != '-')
 		add_pattern(&include, argv[nopts++]);
 
 	nopts--; /* fake argv[0] */
 	nopts += getopts(argc - nopts, argv + nopts);
+
+	/*
+	 * For compatibility with Info-ZIP's unzip(1) we need to treat
+	 * non-option arguments following an -x after the zipfile as
+	 * exclude list members.
+	 */
+	if (unzip_exclude_mode) {
+		while (nopts < argc && *argv[nopts] != '-')
+			add_pattern(&exclude, argv[nopts++]);
+		nopts--; /* fake argv[0] */
+		nopts += getopts(argc - nopts, argv + nopts);
+	}
 
 	/* There may be residual arguments if we encountered -- */
 	while (nopts < argc)

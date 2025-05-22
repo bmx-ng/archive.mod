@@ -24,7 +24,6 @@
  */
 
 #include "archive_platform.h"
-__FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format.c 201168 2009-12-29 06:15:32Z kientzle $");
 
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
@@ -37,6 +36,9 @@ __FBSDID("$FreeBSD: head/lib/libarchive/archive_write_set_format.c 201168 2009-1
 #include "archive.h"
 #include "archive_private.h"
 #include "archive_write_set_format_private.h"
+
+// BlitzMax changes:
+/* As per the original, but with the table removed, allowing us chose independently which formats to include */
 
 void
 __archive_write_entry_filetype_unsupported(struct archive *a,

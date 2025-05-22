@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2003-2015 Tim Kientzle
+ * Copyright (c) 2003-2024 Tim Kientzle
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -21,19 +21,30 @@
  * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
- * $FreeBSD$
  */
+#include "test.h"
 
-#ifndef ARCHIVE_GETDATE_H_INCLUDED
-#define ARCHIVE_GETDATE_H_INCLUDED
+DEFINE_TEST(test_read_filter_gzip_recursive)
+{
+	const char *name = "test_read_filter_gzip_recursive.gz";
+	struct archive *a;
 
-#ifndef __LIBARCHIVE_BUILD
-#error This header is only to be used internally to libarchive.
-#endif
+	if (!canGzip()) {
+		skipping("gzip not available");
+		return;
+	}
 
-#include <time.h>
+	assert((a = archive_read_new()) != NULL);
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_filter_all(a));
+	assertEqualIntA(a, ARCHIVE_OK, archive_read_support_format_all(a));
+	extract_reference_file(name);
+	assertEqualIntA(a, ARCHIVE_FATAL,
+	    archive_read_open_filename(a, name, 200));
 
-time_t __archive_get_date(time_t now, const char *);
+	/* Verify that the filter detection worked. */
+	assertEqualInt(archive_filter_code(a, 0), ARCHIVE_FILTER_GZIP);
+	assertEqualString(archive_filter_name(a, 0), "gzip");
 
-#endif
+	assertEqualInt(ARCHIVE_OK, archive_read_close(a));
+	assertEqualInt(ARCHIVE_OK, archive_read_free(a));
+}

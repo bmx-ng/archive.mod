@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -36,9 +36,9 @@ Import "libarchive/libarchive/archive_entry_stat.c"
 Import "libarchive/libarchive/archive_entry_strmode.c"
 Import "libarchive/libarchive/archive_entry_xattr.c"
 Import "libarchive/libarchive/archive_entry.c"
-Import "libarchive/libarchive/archive_getdate.c"
 Import "libarchive/libarchive/archive_options.c"
 Import "libarchive/libarchive/archive_pack_dev.c"
+Import "libarchive/libarchive/archive_parse_date.c"
 Import "libarchive/libarchive/archive_pathmatch.c"
 Import "libarchive/libarchive/archive_ppmd7.c"
 Import "libarchive/libarchive/archive_ppmd8.c"
@@ -53,6 +53,7 @@ Import "libarchive/libarchive/archive_read_support_format_empty.c"
 Import "libarchive/libarchive/archive_read.c"
 Import "libarchive/libarchive/archive_string.c"
 Import "libarchive/libarchive/archive_string_sprintf.c"
+Import "libarchive/libarchive/archive_time.c"
 Import "libarchive/libarchive/archive_util.c"
 Import "libarchive/libarchive/archive_virtual.c"
 Import "libarchive/libarchive/archive_version_details.c"
@@ -71,6 +72,5 @@ Import "libarchive/libarchive/archive_windows.c"
 Import "libarchive/libarchive/filter_fork_windows.c"
 ?
 
-'Import "mods/archive_string.c"
 Import "mods/archive_write_set_format.c"
 Import "glue.c"

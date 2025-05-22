@@ -24,7 +24,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 #include "test.h"
-__FBSDID("$FreeBSD$");
 
 /*
  * Verify reading entries with POSIX.1e and NFSv4 ACLs from archives created
@@ -230,7 +229,7 @@ DEFINE_TEST(test_compat_solaris_tar_acl)
 	assertEntryCompareAcls(ae, acls0, sizeof(acls0)/sizeof(acls0[0]),
 	    ARCHIVE_ENTRY_ACL_TYPE_ACCESS, 0644);
 	failure("Basic ACLs should set mode to 0644, not %04o",
-	    archive_entry_mode(ae)&0777);
+	    (unsigned int)archive_entry_mode(ae)&0777);
 	assert((archive_entry_mode(ae) & 0777) == 0644);
 
 	/* Second item has default and access ACLs */
@@ -240,7 +239,7 @@ DEFINE_TEST(test_compat_solaris_tar_acl)
 	assertEntryCompareAcls(ae, acls1, sizeof(acls1)/sizeof(acls1[0]),
 	    ARCHIVE_ENTRY_ACL_TYPE_ACCESS, 0750);
 	failure("Basic ACLs should set mode to 0750, not %04o",
-	    archive_entry_mode(ae)&0777);
+	    (unsigned int)archive_entry_mode(ae)&0777);
 	assert((archive_entry_mode(ae) & 0777) == 0750);
 	assertEqualInt(6, archive_entry_acl_reset(ae,
 	    ARCHIVE_ENTRY_ACL_TYPE_DEFAULT));

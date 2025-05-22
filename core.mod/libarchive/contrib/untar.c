@@ -40,11 +40,25 @@
 #include <windows.h>
 #endif
 
-/* Parse an octal number, ignoring leading and trailing nonsense. */
+#define BLOCKSIZE 512
+
+/* System call to create a directory. */
 static int
+system_mkdir(char *pathname, int mode)
+{
+#if defined(_WIN32) && !defined(__CYGWIN__)
+	(void)mode; /* UNUSED */
+	return _mkdir(pathname);
+#else
+	return mkdir(pathname, mode);
+#endif
+}
+
+/* Parse an octal number, ignoring leading and trailing nonsense. */
+static unsigned long
 parseoct(const char *p, size_t n)
 {
-	int i = 0;
+	unsigned long i = 0;
 
 	while ((*p < '0' || *p > '7') && n > 0) {
 		++p;
@@ -64,7 +78,7 @@ static int
 is_end_of_archive(const char *p)
 {
 	int n;
-	for (n = 511; n >= 0; --n)
+	for (n = 0; n < BLOCKSIZE; ++n)
 		if (p[n] != '\0')
 			return (0);
 	return (1);
@@ -82,12 +96,7 @@ create_dir(char *pathname, int mode)
 		pathname[strlen(pathname) - 1] = '\0';
 
 	/* Try creating the directory. */
-#if defined(_WIN32) && !defined(__CYGWIN__)
-	r = _mkdir(pathname);
-#else
-	r = mkdir(pathname, mode);
-#endif
-
+	r = system_mkdir(pathname, mode);
 	if (r != 0) {
 		/* On failure, try creating parent directory. */
 		p = strrchr(pathname, '/');
@@ -95,11 +104,7 @@ create_dir(char *pathname, int mode)
 			*p = '\0';
 			create_dir(pathname, 0755);
 			*p = '/';
-#if defined(_WIN32) && !defined(__CYGWIN__)
-			r = _mkdir(pathname);
-#else
-			r = mkdir(pathname, mode);
-#endif
+			r = system_mkdir(pathname, mode);
 		}
 	}
 	if (r != 0)
@@ -130,7 +135,7 @@ static int
 verify_checksum(const char *p)
 {
 	int n, u = 0;
-	for (n = 0; n < 512; ++n) {
+	for (n = 0; n < BLOCKSIZE; ++n) {
 		if (n < 148 || n > 155)
 			/* Standard tar checksum adds unsigned bytes. */
 			u += ((unsigned char *)p)[n];
@@ -138,25 +143,25 @@ verify_checksum(const char *p)
 			u += 0x20;
 
 	}
-	return (u == parseoct(p + 148, 8));
+	return (u == (int)parseoct(p + 148, 8));
 }
 
 /* Extract a tar archive. */
 static void
 untar(FILE *a, const char *path)
 {
-	char buff[512];
+	char buff[BLOCKSIZE];
 	FILE *f = NULL;
 	size_t bytes_read;
-	int filesize;
+	unsigned long filesize;
 
 	printf("Extracting from %s\n", path);
 	for (;;) {
-		bytes_read = fread(buff, 1, 512, a);
-		if (bytes_read < 512) {
+		bytes_read = fread(buff, 1, BLOCKSIZE, a);
+		if (bytes_read < BLOCKSIZE) {
 			fprintf(stderr,
-			    "Short read on %s: expected 512, got %d\n",
-			    path, (int)bytes_read);
+			    "Short read on %s: expected %d, got %d\n",
+			    path, BLOCKSIZE, (int)bytes_read);
 			return;
 		}
 		if (is_end_of_archive(buff)) {
@@ -183,7 +188,7 @@ untar(FILE *a, const char *path)
 			break;
 		case '5':
 			printf(" Extracting dir %s\n", buff);
-			create_dir(buff, parseoct(buff + 100, 8));
+			create_dir(buff, (int)parseoct(buff + 100, 8));
 			filesize = 0;
 			break;
 		case '6':
@@ -191,19 +196,19 @@ untar(FILE *a, const char *path)
 			break;
 		default:
 			printf(" Extracting file %s\n", buff);
-			f = create_file(buff, parseoct(buff + 100, 8));
+			f = create_file(buff, (int)parseoct(buff + 100, 8));
 			break;
 		}
 		while (filesize > 0) {
-			bytes_read = fread(buff, 1, 512, a);
-			if (bytes_read < 512) {
+			bytes_read = fread(buff, 1, BLOCKSIZE, a);
+			if (bytes_read < BLOCKSIZE) {
 				fprintf(stderr,
-				    "Short read on %s: Expected 512, got %d\n",
-				    path, (int)bytes_read);
+				    "Short read on %s: Expected %d, got %d\n",
+				    path, BLOCKSIZE, (int)bytes_read);
 				return;
 			}
-			if (filesize < 512)
-				bytes_read = filesize;
+			if (filesize < BLOCKSIZE)
+				bytes_read = (size_t)filesize;
 			if (f != NULL) {
 				if (fwrite(buff, 1, bytes_read, f)
 				    != bytes_read)
