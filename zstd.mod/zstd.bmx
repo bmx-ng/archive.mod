@@ -1,4 +1,4 @@
-' Copyright (c) 2022-2023 Bruce A Henderson
+' Copyright (c) 2022-2025 Bruce A Henderson
 ' All rights reserved.
 '
 ' Redistribution and use in source and binary forms, with or without
@@ -24,17 +24,19 @@ SuperStrict
 
 Module Archive.Zstd
 
-ModuleInfo "Version: 1.01"
+ModuleInfo "Version: 1.02"
 ModuleInfo "License: BSD"
-ModuleInfo "Copyright: Wrapper - 2022-2023 Bruce A Henderson"
+ModuleInfo "Copyright: Wrapper - 2022-2025 Bruce A Henderson"
 ModuleInfo "Copyright: ZStandard - Meta Platforms, Inc. and affiliates. All rights reserved."
 
+ModuleInfo "History: 1.02"
+ModuleInfo "History: Update to zstd 1.5.7"
 ModuleInfo "History: 1.01"
 ModuleInfo "History: Update to zstd 1.5.5"
 ModuleInfo "History: 1.00"
 ModuleInfo "History: Initial Release. zstd 1.5.2"
 
-ModuleInfo "CC_OPTS: -DHAVE_ZSTD_H -DHAVE_LIBZSTD -DHAVE_LIBZSTD_COMPRESSOR"
+ModuleInfo "CC_OPTS: -DHAVE_ZSTD_H -DHAVE_LIBZSTD -DHAVE_LIBZSTD_COMPRESSOR -DHAVE_ZSTD_compressStream"
 ModuleInfo "CC_OPTS: -DHAVE_CONFIG_H -D_FILE_OFFSET_BITS=64"
 ?win32
 ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC"
