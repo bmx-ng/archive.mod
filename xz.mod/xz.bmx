@@ -28,7 +28,7 @@ Module Archive.Xz
 ModuleInfo "CC_OPTS: -DHAVE_LZMA_H -DHAVE_LIBLZMA -std=gnu99"
 ModuleInfo "CC_OPTS: -DHAVE_CONFIG_H -D_FILE_OFFSET_BITS=64"
 ?win32
-ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC"
+ModuleInfo "CC_OPTS: -DLIBARCHIVE_STATIC -DMYTHREAD_VISTA"
 ?
 
 ' config.h
