@@ -29,7 +29,7 @@
 
 void * archive_core_TArchiveCallbackData__read(BBObject * data, BBInt64 * count);
 void archive_core_TArchiveCallbackData__seek(BBObject * data, BBInt64 offset, int whence, BBInt64 * count);
-void * archive_core_TArchiveCallbackData__write(BBObject * data, void * buffer, size_t length, BBInt64 * count);
+void archive_core_TArchiveCallbackData__write(BBObject * data, void * buffer, size_t length, BBInt64 * count);
 int archive_core_TArchiveCallbackData__close(BBObject * data);
 char * archive_core_TReadArchive__passphraseCallback(BBObject * data);
 
@@ -38,19 +38,19 @@ char * archive_core_TReadArchive__passphraseCallback(BBObject * data);
 __LA_SSIZE_T bmx_libarchive_read_cb(struct archive * arc, void *data, const void **_buffer) {
 	BBInt64 count;
 	*_buffer = archive_core_TArchiveCallbackData__read((BBObject*)data, &count);
-	return count;
+	return (__LA_SSIZE_T)count;
 }
 
 __LA_INT64_T bmx_libarchive_seek_cb(struct archive * arc, void *data, __LA_INT64_T offset, int whence) {
-	__LA_INT64_T ret;
-	archive_core_TArchiveCallbackData__seek((BBObject*)data, offset, whence, &ret);
-	return ret;
+	BBInt64 ret;
+	archive_core_TArchiveCallbackData__seek((BBObject*)data, (BBInt64)offset, whence, &ret);
+	return (__LA_INT64_T)ret;
 }
 
 __LA_SSIZE_T bmx_libarchive_write_cb(struct archive * arc, void *data, const void *_buffer, size_t length) {
 	BBInt64 ret;
 	archive_core_TArchiveCallbackData__write((BBObject*)data, _buffer, length, &ret);
-	return ret;
+	return (__LA_SSIZE_T)ret;
 }
 
 int	bmx_libarchive_open_cb(struct archive * arc, void *data) {
