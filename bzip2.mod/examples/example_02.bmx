@@ -11,7 +11,6 @@ wa.AddFilter(EArchiveFilter.BZIP2)
 wa.Open("data.tar.bz2")
 
 wa.AddEntry("testdata.txt", "files/testdata.txt")
-wa.AddEntry("테스트_데이터.txt", "files/테스트_데이터.txt")
 wa.AddEntry("", "empty", 0, 0, EArchiveFileType.Dir)
 
 wa.Close()
