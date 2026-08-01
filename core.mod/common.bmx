@@ -49,7 +49,7 @@ Extern
 	
 	Function bmx_libarchive_write_archive_new:Byte Ptr()
 	Function bmx_libarchive_archive_write_free:Int(handle:Byte Ptr)
-	Function bmx_libarchive_archive_write_open_memory:Int(handle:Byte Ptr, buf:Byte Ptr, size:Int, used:Int Ptr)
+	Function bmx_libarchive_archive_write_open_memory:Int(handle:Byte Ptr, buf:Byte Ptr, size:Int, used:Size_T Ptr)
 	Function bmx_libarchive_archive_write_data:Int(handle:Byte Ptr, data:Byte Ptr, size:Size_T)
 	Function bmx_libarchive_archive_write_header:Int(handle:Byte Ptr, entry:Byte Ptr)
 	Function bmx_libarchive_archive_write_close:Int(handle:Byte Ptr)
