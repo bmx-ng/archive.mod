@@ -552,7 +552,7 @@ Type TWriteArchive Extends TArchive
 	After writing, @used will be populated with the total bytes used, so the pointer should remain valid until then.
 	End Rem
 	Method Open:Int(buf:Byte Ptr, size:Int, used:Size_T Ptr)
-		Return bmx_libarchive_archive_write_open_memory(archivePtr, buf, size, Varptr used)
+		Return bmx_libarchive_archive_write_open_memory(archivePtr, buf, size, used)
 	End Method
 	
 	Rem
